@@ -90,11 +90,34 @@ async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table
                                             if "extra" in first_anchor and isinstance(first_anchor["extra"], str):
                                                 extra_str = first_anchor["extra"]
                                                 print("\n[解析 anchors] 第 {} 项的 anchors 第一个元素的 extra 字段:".format(i+1))
-                                                print(f"原始字符串: {extra_str}")
+                                                #print(f"原始字符串: {extra_str}")
                                                 
                                                 # 尝试将 extra 字符串解析为 JSON
                                                 try:
                                                     extra_json = json.loads(extra_str)
+                                                    
+                                                    # 移除不需要的字段
+                                                    unwanted_fields = ['icon', 'actions', 'component_key', 'anchor_strong']
+                                                    for field in unwanted_fields:
+                                                        if field in extra_json:
+                                                            del extra_json[field]
+                                                    
+                                                    # 进一步解析里面的 extra 字段
+                                                    if 'extra' in extra_json and isinstance(extra_json['extra'], str):
+                                                        try:
+                                                            inner_extra = json.loads(extra_json['extra'])
+                                                            # 只保留 product_id, title, img 三个字段
+                                                            filtered_inner = {}
+                                                            if 'product_id' in inner_extra:
+                                                                filtered_inner['product_id'] = inner_extra['product_id']
+                                                            if 'title' in inner_extra:
+                                                                filtered_inner['title'] = inner_extra['title']
+                                                            if 'img' in inner_extra:
+                                                                filtered_inner['img'] = inner_extra['img']
+                                                            extra_json['extra'] = filtered_inner
+                                                        except json.JSONDecodeError as inner_e:
+                                                            print(f"解析 inner extra 失败: {str(inner_e)}")
+                                                    
                                                     print("解析结果 (JSON):")
                                                     print(json.dumps(extra_json, indent=2, ensure_ascii=False))
                                                     
