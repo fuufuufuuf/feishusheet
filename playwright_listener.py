@@ -265,8 +265,11 @@ async def main():
                     viewport={"width": 1920, "height": 1080},
                     accept_downloads=True,
                     locale="en-US",
-                    geolocation={"latitude": 32.7157, "longitude": -117.1611},
-                    permissions=["geolocation"]
+                    args=[
+                    '--disable-blink-features=AutomationControlled',
+                    '--disable-features=IsolateOrigins,site-per-process'
+                    ],
+        
                 )
                 page = context.pages[0] if context.pages else await context.new_page()
                 print("浏览器启动成功")
