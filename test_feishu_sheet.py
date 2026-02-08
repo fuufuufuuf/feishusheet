@@ -4,14 +4,31 @@
 测试飞书多维表格操作
 """
 
+import json
 from feishu_sheet import FeishuSheet
 
-# 配置信息（需要根据实际情况填写）
-APP_ID = "cli_a90e2a7c70381bd6"  # 在飞书开放平台创建应用后获取
-APP_SECRET = "o0lrqtV7XPaXo4FrlC5RJJtGZBXOhrw2"  # 在飞书开放平台创建应用后获取
-APP_TOKEN = "AMyYbIx6Ya7xSXsOvTbc65B8nqe"  # 多维表格的 app_token，在多维表格链接中获取
-TABLE_ID = "tblhEdUtW6C69Vmn"  # 表格的 table_id，在多维表格链接中获取
-#VIEW_ID = "vewSETp8gf"  # 视图的 view_id，可选
+# 从配置文件读取配置信息
+try:
+    with open('config.json', 'r', encoding='utf-8') as f:
+        config = json.load(f)
+    
+    # 配置信息
+    APP_ID = config.get('feishu', {}).get('app_id')
+    APP_SECRET = config.get('feishu', {}).get('app_secret')
+    APP_TOKEN = config.get('bitable', {}).get('app_token')
+    TABLE_ID = config.get('bitable', {}).get('table_id')
+    #VIEW_ID = config.get('bitable', {}).get('view_id', '')  # 视图的 view_id，可选
+    
+    print("成功读取配置文件")
+except Exception as e:
+    print(f"读取配置文件失败: {str(e)}")
+    # 使用默认值
+    APP_ID = "cli_a90e2a7c70381bd6"  # 在飞书开放平台创建应用后获取
+    APP_SECRET = "o0lrqtV7XPaXo4FrlC5RJJtGZBXOhrw2"  # 在飞书开放平台创建应用后获取
+    APP_TOKEN = "AMyYbIx6Ya7xSXsOvTbc65B8nqe"  # 多维表格的 app_token，在多维表格链接中获取
+    TABLE_ID = "tblhEdUtW6C69Vmn"  # 表格的 table_id，在多维表格链接中获取
+    #VIEW_ID = "vewSETp8gf"  # 视图的 view_id，可选
+    print("使用默认配置")
 
 
 def test_auth():
