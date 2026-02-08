@@ -135,7 +135,7 @@ async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table
                                                             "product_imgs": str(extra_json.get('img', '')) if isinstance(extra_json.get('img'), list) else extra_json.get('img', ''),
                                                         }
                                                         # 写入记录
-                                                        result = feishu_sheet.create_record(app_token, table_id, fields)
+                                                        result = feishu_sheet.create_record(app_token, table_id, fields, f"第 {i+1} 项")
                                                         if not result:
                                                             print("写入飞书表格失败")
                                                 except json.JSONDecodeError as e:
@@ -166,18 +166,6 @@ async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table
         # 等待 5 秒，捕获更多网络请求
         print("\n=== 等待 5 秒捕获更多请求 ===")
         await asyncio.sleep(5)
-
-        # 模拟用户滚轮向下滑动 5 次
-        # print("\n=== 模拟用户滚轮向下滑动 ===")
-        # for i in range(5):
-        #     print(f"第 {i+1} 次滚动")
-        #     # 使用 JavaScript 执行页面滚动，更可靠
-        #     await page.evaluate("window.scrollBy(0, window.innerHeight)")
-        #     # 等待 2-3 秒随机间隔
-        #     wait_time = random.uniform(2, 3)
-        #     print(f"等待 {wait_time:.2f} 秒")
-        #     await asyncio.sleep(wait_time)
-
         # 等待所有异步任务完成
         if tasks:
             print(f"\n=== 等待 {len(tasks)} 个异步任务完成 ===")

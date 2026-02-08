@@ -137,12 +137,13 @@ class FeishuSheet:
             logging.error(f"获取视图数据异常: {str(e)}")
             return None
     
-    def create_record(self, app_token, table_id, fields):
+    def create_record(self, app_token, table_id, fields, note=""):
         """
         创建记录
         app_token: 应用 token
         table_id: 表格 ID
         fields: 字段数据，格式为 {"字段名": "值"}
+        note: 备注，可选
         """
         try:
             token = self.ensure_token()
@@ -164,23 +165,23 @@ class FeishuSheet:
             #print(f"请求体: {payload}")
             
             response = requests.post(url, headers=headers, json=payload)
-            print(f"响应状态码: {response.status_code}")
+            #print(f"响应状态码: {response.status_code}")
             #print(f"响应内容: {response.text}")
             
             # 尝试解析响应
             try:
                 result = response.json()
-                print(f"解析后的响应: {result}")
+                #print(f"解析后的响应: {result}")
                 
                 if result.get("code") == 0:
-                    logging.info("创建记录成功")
+                    logging.info(f"创建记录成功，备注: {note}")
                     return result
                 else:
-                    logging.error(f"创建记录失败: {result.get('msg')}")
+                    logging.error(f"创建记录失败: {result.get('msg')}，备注: {note}")
                     return None
             except json.JSONDecodeError as e:
                 print(f"JSON解析错误: {str(e)}")
-                logging.error(f"创建记录异常: 响应不是有效的JSON格式")
+                logging.error(f"创建记录异常: 响应不是有效的JSON格式，备注: {note}")
                 return None
         except Exception as e:
             print(f"请求异常: {str(e)}")
