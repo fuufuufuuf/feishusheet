@@ -1,9 +1,17 @@
 {
     "feishu": {
+        "app_id": "cli_a98591493d7d100e",
+        "app_secret": "90ZGD0KdiybDjXNbaxDWRhsPAjJPWKKP"
+    },
+    "bitable": {
+        "app_token": "Ya7EbZyhXaq98tsGjvSch93xnhe",
+        "table_id": "tbldwjwVRbgOHgos"
+    },
+    "feishu_r": {
         "app_id": "cli_a90e2a7c70381bd6",
         "app_secret": "o0lrqtV7XPaXo4FrlC5RJJtGZBXOhrw2"
     },
-    "bitable": {
+    "bitable_r": {
         "app_token": "AMyYbIx6Ya7xSXsOvTbc65B8nqe",
         "table_id": "tblhEdUtW6C69Vmn"
     }

@@ -17,7 +17,7 @@ try:
     APP_SECRET = config.get('feishu', {}).get('app_secret')
     APP_TOKEN = config.get('bitable', {}).get('app_token')
     TABLE_ID = config.get('bitable', {}).get('table_id')
-    #VIEW_ID = config.get('bitable', {}).get('view_id', '')  # 视图的 view_id，可选
+    VIEW_ID = config.get('bitable', {}).get('view_id', None)  # 视图的 view_id，可选
     
     print("成功读取配置文件")
 except Exception as e:
@@ -79,20 +79,18 @@ def test_write_data():
     feishu = FeishuSheet(APP_ID, APP_SECRET)
     
     # 测试创建记录
+    # 使用表格中实际存在的字段
     test_fields = {
-        "名称": "测试记录",
-        "数值": 123,
-        "状态": "正常"
+        "pid": "test_12345"
     }
     result = feishu.create_record(APP_TOKEN, TABLE_ID, test_fields)
     if result:
-        record_id = result.get('data', {}).get('record_id')
+        record_id = result.get('data', {}).get('record', {}).get('record_id')
         print(f"创建记录成功，记录 ID: {record_id}")
         
         # 测试更新记录
         update_fields = {
-            "数值": 456,
-            "状态": "已更新"
+            "pid": "updated_12345"
         }
         update_result = feishu.update_record(APP_TOKEN, TABLE_ID, record_id, update_fields)
         if update_result:

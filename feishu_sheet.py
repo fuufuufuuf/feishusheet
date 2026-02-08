@@ -64,8 +64,8 @@ class FeishuSheet:
             if not token:
                 return None
             
-            # 使用最新的v3版本API
-            url = f"https://open.feishu.cn/open-apis/bitable/v3/apps/{app_token}/tables/{table_id}/records"
+            # 退回到v1版本API
+            url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records"
             headers = {
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json"
@@ -76,15 +76,26 @@ class FeishuSheet:
             }
             
             response = requests.get(url, headers=headers, params=params)
-            result = response.json()
+            print(f"响应状态码: {response.status_code}")
+            print(f"响应内容: {response.text}")
             
-            if result.get("code") == 0:
-                logging.info("获取表格数据成功")
-                return result
-            else:
-                logging.error(f"获取表格数据失败: {result.get('msg')}")
+            # 尝试解析响应
+            try:
+                result = response.json()
+                print(f"解析后的响应: {result}")
+                
+                if result.get("code") == 0:
+                    logging.info("获取表格数据成功")
+                    return result
+                else:
+                    logging.error(f"获取表格数据失败: {result.get('msg')}")
+                    return None
+            except json.JSONDecodeError as e:
+                print(f"JSON解析错误: {str(e)}")
+                logging.error(f"获取表格数据异常: 响应不是有效的JSON格式")
                 return None
         except Exception as e:
+            print(f"请求异常: {str(e)}")
             logging.error(f"获取表格数据异常: {str(e)}")
             return None
     
@@ -102,8 +113,8 @@ class FeishuSheet:
             if not token:
                 return None
             
-            # 使用最新的v3版本API
-            url = f"https://open.feishu.cn/open-apis/bitable/v3/apps/{app_token}/tables/{table_id}/views/{view_id}/records"
+            # 退回到v1版本API
+            url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/views/{view_id}/records"
             headers = {
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json"
@@ -138,8 +149,8 @@ class FeishuSheet:
             if not token:
                 return None
             
-            # 使用最新的v3版本API
-            url = f"https://open.feishu.cn/open-apis/bitable/v3/apps/{app_token}/tables/{table_id}/records"
+            # 退回到v1版本API
+            url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records"
             headers = {
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json"
@@ -148,16 +159,31 @@ class FeishuSheet:
                 "fields": fields
             }
             
-            response = requests.post(url, headers=headers, json=payload)
-            result = response.json()
+            #print(f"请求URL: {url}")
+            #print(f"请求头: {headers}")
+            #print(f"请求体: {payload}")
             
-            if result.get("code") == 0:
-                logging.info("创建记录成功")
-                return result
-            else:
-                logging.error(f"创建记录失败: {result.get('msg')}")
+            response = requests.post(url, headers=headers, json=payload)
+            print(f"响应状态码: {response.status_code}")
+            #print(f"响应内容: {response.text}")
+            
+            # 尝试解析响应
+            try:
+                result = response.json()
+                print(f"解析后的响应: {result}")
+                
+                if result.get("code") == 0:
+                    logging.info("创建记录成功")
+                    return result
+                else:
+                    logging.error(f"创建记录失败: {result.get('msg')}")
+                    return None
+            except json.JSONDecodeError as e:
+                print(f"JSON解析错误: {str(e)}")
+                logging.error(f"创建记录异常: 响应不是有效的JSON格式")
                 return None
         except Exception as e:
+            print(f"请求异常: {str(e)}")
             logging.error(f"创建记录异常: {str(e)}")
             return None
     
@@ -174,8 +200,8 @@ class FeishuSheet:
             if not token:
                 return None
             
-            # 使用最新的v3版本API
-            url = f"https://open.feishu.cn/open-apis/bitable/v3/apps/{app_token}/tables/{table_id}/records/{record_id}"
+            # 退回到v1版本API
+            url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records/{record_id}"
             headers = {
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json"
@@ -209,8 +235,8 @@ class FeishuSheet:
             if not token:
                 return None
             
-            # 使用最新的v3版本API
-            url = f"https://open.feishu.cn/open-apis/bitable/v3/apps/{app_token}/tables/{table_id}/records/{record_id}"
+            # 退回到v1版本API
+            url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records/{record_id}"
             headers = {
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json"

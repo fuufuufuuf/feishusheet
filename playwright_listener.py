@@ -8,6 +8,10 @@ import asyncio
 from playwright.async_api import async_playwright
 import json
 import os
+import time
+import random
+import platform
+import sys
 from feishu_sheet import FeishuSheet
 
 
@@ -15,11 +19,11 @@ async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table
         """
         拦截并分析网络请求
         """
-        import time  # 在函数内部导入 time 模块，确保内部函数能够访问
-        import random  # 导入 random 模块用于生成随机间隔时间
         # 存储所有请求
         requests_data = []
         responses_data = []
+        # 存储异步任务
+        tasks = []
 
         def log_request(request):
             """
@@ -89,51 +93,50 @@ async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table
                                             first_anchor = item["anchors"][0]
                                             if "extra" in first_anchor and isinstance(first_anchor["extra"], str):
                                                 extra_str = first_anchor["extra"]
-                                                print("\n[解析 anchors] 第 {} 项的 anchors 第一个元素的 extra 字段:".format(i+1))
+                                                #print("\n[解析 anchors] 第 {} 项的 anchors 第一个元素的 extra 字段:".format(i+1))
                                                 #print(f"原始字符串: {extra_str}")
                                                 
                                                 # 尝试将 extra 字符串解析为 JSON
                                                 try:
-                                                    extra_json = json.loads(extra_str)
-                                                    
+                                                    extra_json = json.loads(extra_str)[0]
+                                                    if 'extra' not in extra_json:
+                                                        continue                                                    
                                                     # 移除不需要的字段
                                                     unwanted_fields = ['icon', 'actions', 'component_key', 'anchor_strong']
                                                     for field in unwanted_fields:
                                                         if field in extra_json:
                                                             del extra_json[field]
+                                                    try:
+                                                        inner_extra = json.loads(extra_json['extra'])
+                                                        # 只保留 product_id, title, img 三个字段
+                                                        if 'product_id' in inner_extra:
+                                                            extra_json['product_id'] = inner_extra['product_id']
+                                                        if 'title' in inner_extra:
+                                                            extra_json['title'] = inner_extra['title']
+                                                        if 'img' in inner_extra:
+                                                            extra_json['img'] = inner_extra['img']
+                                                    except json.JSONDecodeError as inner_e:
+                                                        print(f"解析 inner extra 失败: {str(inner_e)}")
                                                     
-                                                    # 进一步解析里面的 extra 字段
-                                                    if 'extra' in extra_json and isinstance(extra_json['extra'], str):
-                                                        try:
-                                                            inner_extra = json.loads(extra_json['extra'])
-                                                            # 只保留 product_id, title, img 三个字段
-                                                            filtered_inner = {}
-                                                            if 'product_id' in inner_extra:
-                                                                filtered_inner['product_id'] = inner_extra['product_id']
-                                                            if 'title' in inner_extra:
-                                                                filtered_inner['title'] = inner_extra['title']
-                                                            if 'img' in inner_extra:
-                                                                filtered_inner['img'] = inner_extra['img']
-                                                            extra_json['extra'] = filtered_inner
-                                                        except json.JSONDecodeError as inner_e:
-                                                            print(f"解析 inner extra 失败: {str(inner_e)}")
-                                                    
-                                                    print("解析结果 (JSON):")
-                                                    print(json.dumps(extra_json, indent=2, ensure_ascii=False))
+                                                    #print("解析结果 (JSON):")
+                                                    #print(json.dumps(extra_json, indent=2, ensure_ascii=False))
                                                     
                                                     # 写入飞书表格
                                                     if feishu_sheet and app_token and table_id:
                                                         # 构建字段数据
                                                         fields = {
-                                                            "extra_json": json.dumps(extra_json, ensure_ascii=False),
-                                                            "item_index": str(i+1),
-                                                            "timestamp": str(time.time())
+                                                            "handle": item.get('author', '').get('uniqueId', ''),
+                                                            "video_id": item.get('id', ''),
+                                                            "video_create_time": str(item.get('createTime', '')),
+                                                            "video_title": item.get('desc', ''),                                                                                                              
+                                                            "product_id": extra_json.get('id', ''),
+                                                            "product_title": extra_json.get('title', ''),
+                                                            "product_keyword": extra_json.get('keyword', ''),
+                                                            "product_imgs": str(extra_json.get('img', '')) if isinstance(extra_json.get('img'), list) else extra_json.get('img', ''),
                                                         }
                                                         # 写入记录
                                                         result = feishu_sheet.create_record(app_token, table_id, fields)
-                                                        if result:
-                                                            print(f"写入飞书表格成功: {result}")
-                                                        else:
+                                                        if not result:
                                                             print("写入飞书表格失败")
                                                 except json.JSONDecodeError as e:
                                                     print(f"解析失败: {str(e)}")
@@ -144,7 +147,8 @@ async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table
                         print(f"[获取响应体失败] {str(e)}")
                 
                 # 异步获取响应体
-                asyncio.create_task(get_response_body())
+                task = asyncio.create_task(get_response_body())
+                tasks.append(task)
 
         # 设置请求和响应监听器
         page.on("request", log_request)
@@ -164,15 +168,21 @@ async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table
         await asyncio.sleep(5)
 
         # 模拟用户滚轮向下滑动 5 次
-        print("\n=== 模拟用户滚轮向下滑动 ===")
-        for i in range(5):
-            print(f"第 {i+1} 次滚动")
-            # 使用 JavaScript 执行页面滚动，更可靠
-            await page.evaluate("window.scrollBy(0, window.innerHeight)")
-            # 等待 2-3 秒随机间隔
-            wait_time = random.uniform(2, 3)
-            print(f"等待 {wait_time:.2f} 秒")
-            await asyncio.sleep(wait_time)
+        # print("\n=== 模拟用户滚轮向下滑动 ===")
+        # for i in range(5):
+        #     print(f"第 {i+1} 次滚动")
+        #     # 使用 JavaScript 执行页面滚动，更可靠
+        #     await page.evaluate("window.scrollBy(0, window.innerHeight)")
+        #     # 等待 2-3 秒随机间隔
+        #     wait_time = random.uniform(2, 3)
+        #     print(f"等待 {wait_time:.2f} 秒")
+        #     await asyncio.sleep(wait_time)
+
+        # 等待所有异步任务完成
+        if tasks:
+            print(f"\n=== 等待 {len(tasks)} 个异步任务完成 ===")
+            await asyncio.gather(*tasks)
+            print("所有异步任务已完成")
 
         # 统计请求数量
         print(f"\n=== 统计信息 ===")
@@ -196,29 +206,35 @@ async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table
         return requests_data, responses_data
 
 
-async def main():
+async def update_titkok_video():
     """
     主函数
+    urls: 目标网址列表或单个网址
     """
-    print("=== Playwright 网络请求监听器 ===")
-    
-    # 直接设置目标网址
-    url = "https://www.tiktok.com/@highland.daily.li2"
-    print(f"使用指定网址: {url}")
+    print("=== Playwright 网络请求监听器 ====")
     
     # 从配置文件读取飞书表格信息
     try:
         with open('config.json', 'r', encoding='utf-8') as f:
             config = json.load(f)
         
-        # 初始化飞书表格实例
+        # 初始化飞书表格实例（用于写入数据）
         app_id = config.get('feishu', {}).get('app_id')
         app_secret = config.get('feishu', {}).get('app_secret')
         feishu_sheet = FeishuSheet(app_id, app_secret)
         
-        # 飞书表格配置
+        # 飞书表格配置（用于写入数据）
         app_token = config.get('bitable', {}).get('app_token')
         table_id = config.get('bitable', {}).get('table_id')
+        
+        # 初始化飞书表格实例（用于读取handle数据）
+        app_id_r = config.get('feishu_r', {}).get('app_id')
+        app_secret_r = config.get('feishu_r', {}).get('app_secret')
+        feishu_sheet_r = FeishuSheet(app_id_r, app_secret_r)
+        
+        # 飞书表格配置（用于读取handle数据）
+        app_token_r = config.get('bitable_r', {}).get('app_token')
+        table_id_r = config.get('bitable_r', {}).get('table_id')
         
         print("成功读取配置文件")
     except Exception as e:
@@ -229,10 +245,66 @@ async def main():
         feishu_sheet = FeishuSheet(app_id, app_secret)
         app_token = "your_app_token"
         table_id = "your_table_id"
+        
+        app_id_r = "your_app_id"
+        app_secret_r = "your_app_secret"
+        feishu_sheet_r = FeishuSheet(app_id_r, app_secret_r)
+        app_token_r = "your_app_token"
+        table_id_r = "your_table_id"
         print("使用默认配置")
     
+    # 从飞书表格读取handle数据
+    handles = []
+    try:
+        print("\n=== 从飞书表格读取handle数据 ===")
+        # 读取表格数据
+        sheet_data = feishu_sheet_r.get_sheet_data(app_token_r, table_id_r)
+        if sheet_data:
+            # 提取handle数据
+            records = sheet_data.get('data', {}).get('items', [])
+            print(f"从表格中读取到 {len(records)} 条记录")
+            
+            for record in records:
+                # 尝试从fields中获取handle字段
+                fields = record.get('fields', {})
+                # 查找可能的handle字段名
+                handle = None
+                for key, value in fields.items():
+                    if 'handle' in key.lower() or 'uniqueid' in key.lower():
+                        handle = value
+                        break
+                # 直接检查handle字段
+                if not handle:
+                    handle = fields.get('handle')
+                if handle:
+                    handles.append(handle)
+                    print(f"获取到handle: {handle}")
+            
+            print(f"成功提取 {len(handles)} 个handle")
+        else:
+            print("读取表格数据失败")
+    except Exception as e:
+        print(f"读取handle数据异常: {str(e)}")
+    
+    # 生成URL列表
+    url_list = []
+    if handles:
+        # 如果提供了handles，生成对应的URL
+        base_url = "https://www.tiktok.com/@"
+        for handle in handles:
+            url = f"{base_url}{handle}"
+            url_list.append(url)
+        print(f"\n生成了 {len(url_list)} 个URL")
+        for url in url_list:
+            print(f"- {url}")
+    elif isinstance(urls, list):
+        # 如果提供了URL列表，直接使用
+        url_list = urls
+    else:
+        # 如果只提供了单个URL，转为列表
+        url_list = [urls]
+    
     # 根据操作系统获取 Chrome profile 路径和可执行文件路径
-    import platform
     system = platform.system()
     
     if system == "Windows":
@@ -304,8 +376,20 @@ async def main():
             raise
         
         try:
-            # 拦截请求
-            await intercept_requests(page, url, feishu_sheet, app_token, table_id)
+            # 顺序处理每个URL
+            print(f"\n=== 开始处理 {len(url_list)} 个URL ===")
+            for i, url in enumerate(url_list, 1):
+                print(f"\n=== 处理第 {i} 个URL: {url} ===")
+                try:
+                    # 拦截请求
+                    await intercept_requests(page, url, feishu_sheet, app_token, table_id)
+                    print(f"URL {url} 处理成功")
+                except Exception as e:
+                    print(f"URL {url} 处理失败: {str(e)}")
+                    # 记录错误信息
+                    print(f"错误详情: {str(e)}")
+                    # 继续处理下一个URL
+                    continue
         finally:
             # 关闭浏览器
             print("\n=== 关闭浏览器 ===")
@@ -314,4 +398,5 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+
+    asyncio.run(update_titkok_video())
