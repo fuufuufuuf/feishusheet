@@ -64,7 +64,8 @@ class FeishuSheet:
             if not token:
                 return None
             
-            url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records"
+            # 使用最新的v3版本API
+            url = f"https://open.feishu.cn/open-apis/bitable/v3/apps/{app_token}/tables/{table_id}/records"
             headers = {
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json"
@@ -101,7 +102,8 @@ class FeishuSheet:
             if not token:
                 return None
             
-            url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/views/{view_id}/records"
+            # 使用最新的v3版本API
+            url = f"https://open.feishu.cn/open-apis/bitable/v3/apps/{app_token}/tables/{table_id}/views/{view_id}/records"
             headers = {
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json"
@@ -136,7 +138,8 @@ class FeishuSheet:
             if not token:
                 return None
             
-            url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records"
+            # 使用最新的v3版本API
+            url = f"https://open.feishu.cn/open-apis/bitable/v3/apps/{app_token}/tables/{table_id}/records"
             headers = {
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json"
@@ -171,7 +174,8 @@ class FeishuSheet:
             if not token:
                 return None
             
-            url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records/{record_id}"
+            # 使用最新的v3版本API
+            url = f"https://open.feishu.cn/open-apis/bitable/v3/apps/{app_token}/tables/{table_id}/records/{record_id}"
             headers = {
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json"
@@ -205,7 +209,8 @@ class FeishuSheet:
             if not token:
                 return None
             
-            url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records/{record_id}"
+            # 使用最新的v3版本API
+            url = f"https://open.feishu.cn/open-apis/bitable/v3/apps/{app_token}/tables/{table_id}/records/{record_id}"
             headers = {
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json"
