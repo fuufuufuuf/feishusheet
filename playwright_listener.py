@@ -182,8 +182,38 @@ async def main():
             url = "https://www.tiktok.com/@highland.daily.li2"  # 默认网址
             print(f"使用默认网址: {url}")
     
-    # 获取 Chrome profile 路径
-    profile_path = os.path.expanduser("~\\AppData\\Local\\Google\\Chrome\\User Data\\Profile 4")
+    # 根据操作系统获取 Chrome profile 路径和可执行文件路径
+    import platform
+    system = platform.system()
+    
+    if system == "Windows":
+        # Windows 系统
+        profile_path = os.path.expanduser("~\\AppData\\Local\\Google\\Chrome\\User Data\\Profile 4")
+        chrome_paths = [
+            "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+            "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+            os.path.expanduser("~\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe")
+        ]
+    elif system == "Darwin":
+        # macOS 系统
+        profile_path = os.path.expanduser("~/Library/Application Support/Google/Chrome/Profile 4")
+        chrome_paths = [
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+        ]
+    elif system == "Linux":
+        # Linux 系统
+        profile_path = os.path.expanduser("~/.config/google-chrome/Profile 4")
+        chrome_paths = [
+            "/usr/bin/google-chrome",
+            "/usr/bin/chromium-browser",
+            "/usr/bin/chromium"
+        ]
+    else:
+        # 其他系统
+        profile_path = os.path.expanduser("~/.config/google-chrome/Profile 4")
+        chrome_paths = []
+    
+    print(f"当前操作系统: {system}")
     print(f"使用指定的 Chrome profile: {profile_path}")
     
     async with async_playwright() as p:
@@ -191,11 +221,6 @@ async def main():
         print("\n=== 启动浏览器 ===")
         try:
             # 尝试使用系统已安装的 Chrome
-            chrome_paths = [
-                "C:\Program Files\Google\Chrome\Application\chrome.exe",
-                "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
-                os.path.expanduser("~\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe")
-            ]
             chrome_exe = None
             for path in chrome_paths:
                 if os.path.exists(path):
