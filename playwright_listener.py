@@ -7,12 +7,11 @@
 import asyncio
 from playwright.async_api import async_playwright
 import json
-import sys
-import argparse
 import os
+from feishu_sheet import FeishuSheet
 
 
-async def intercept_requests(page, url):
+async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table_id=None):
         """
         拦截并分析网络请求
         """
@@ -78,7 +77,7 @@ async def intercept_requests(page, url):
                             try:
                                 # 尝试解析为 JSON
                                 json_body = json.loads(body.decode('utf-8', errors='ignore'))
-                                print(f"[响应体] {json.dumps(json_body, indent=2, ensure_ascii=False)}")
+                                #print(f"[响应体] {json.dumps(json_body, indent=2, ensure_ascii=False)}")
                                 
                                 # 提取和处理 itemList 中的 anchors.extra 字段
                                 if "itemList" in json_body:
@@ -98,6 +97,21 @@ async def intercept_requests(page, url):
                                                     extra_json = json.loads(extra_str)
                                                     print("解析结果 (JSON):")
                                                     print(json.dumps(extra_json, indent=2, ensure_ascii=False))
+                                                    
+                                                    # 写入飞书表格
+                                                    if feishu_sheet and app_token and table_id:
+                                                        # 构建字段数据
+                                                        fields = {
+                                                            "extra_json": json.dumps(extra_json, ensure_ascii=False),
+                                                            "item_index": str(i+1),
+                                                            "timestamp": str(time.time())
+                                                        }
+                                                        # 写入记录
+                                                        result = feishu_sheet.create_record(app_token, table_id, fields)
+                                                        if result:
+                                                            print(f"写入飞书表格成功: {result}")
+                                                        else:
+                                                            print("写入飞书表格失败")
                                                 except json.JSONDecodeError as e:
                                                     print(f"解析失败: {str(e)}")
                             except:
@@ -165,22 +179,34 @@ async def main():
     """
     print("=== Playwright 网络请求监听器 ===")
     
-    # 解析命令行参数
-    parser = argparse.ArgumentParser(description="使用 Playwright 监听网络请求")
-    parser.add_argument("url", nargs="?", help="目标网址")
-    parser.add_argument("--profile", help="Chrome profile 路径")
-    args = parser.parse_args()
+    # 直接设置目标网址
+    url = "https://www.tiktok.com/@highland.daily.li2"
+    print(f"使用指定网址: {url}")
     
-    # 获取目标 URL
-    if args.url:
-        url = args.url.strip()
-        print(f"从命令行获取网址: {url}")
-    else:
-        # 获取用户输入的 URL
-        url = input("请输入目标网址: ").strip()
-        if not url:
-            url = "https://www.tiktok.com/@highland.daily.li2"  # 默认网址
-            print(f"使用默认网址: {url}")
+    # 从配置文件读取飞书表格信息
+    try:
+        with open('config.json', 'r', encoding='utf-8') as f:
+            config = json.load(f)
+        
+        # 初始化飞书表格实例
+        app_id = config.get('feishu', {}).get('app_id')
+        app_secret = config.get('feishu', {}).get('app_secret')
+        feishu_sheet = FeishuSheet(app_id, app_secret)
+        
+        # 飞书表格配置
+        app_token = config.get('bitable', {}).get('app_token')
+        table_id = config.get('bitable', {}).get('table_id')
+        
+        print("成功读取配置文件")
+    except Exception as e:
+        print(f"读取配置文件失败: {str(e)}")
+        # 使用默认值
+        app_id = "your_app_id"
+        app_secret = "your_app_secret"
+        feishu_sheet = FeishuSheet(app_id, app_secret)
+        app_token = "your_app_token"
+        table_id = "your_table_id"
+        print("使用默认配置")
     
     # 根据操作系统获取 Chrome profile 路径和可执行文件路径
     import platform
@@ -253,7 +279,7 @@ async def main():
         
         try:
             # 拦截请求
-            await intercept_requests(page, url)
+            await intercept_requests(page, url, feishu_sheet, app_token, table_id)
         finally:
             # 关闭浏览器
             print("\n=== 关闭浏览器 ===")

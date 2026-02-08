@@ -1,0 +1,10 @@
+{
+    "feishu": {
+        "app_id": "cli_a90e2a7c70381bd6",
+        "app_secret": "o0lrqtV7XPaXo4FrlC5RJJtGZBXOhrw2"
+    },
+    "bitable": {
+        "app_token": "AMyYbIx6Ya7xSXsOvTbc65B8nqe",
+        "table_id": "tblhEdUtW6C69Vmn"
+    }
+}
