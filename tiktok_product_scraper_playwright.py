@@ -530,7 +530,7 @@ class TikTokProductScraperPlaywright:
 
 def get_empty_product_source_imgs_records(config_path='config.json'):
     """
-    根据配置文件读取表格，返回product_source_imgs为空的product_id和record_id
+    根据配置文件读取表格，返回product_source_imgs为None的product_id和record_id
     :param config_path: 配置文件路径
     :return: dict数组，每个字典包含product_id和record_id
     """
@@ -552,8 +552,6 @@ def get_empty_product_source_imgs_records(config_path='config.json'):
             print("错误：配置文件缺少必要的参数")
             return []
         
-        print("成功读取配置文件")
-        
     except Exception as e:
         print(f"读取配置文件失败: {str(e)}")
         return []
@@ -561,48 +559,63 @@ def get_empty_product_source_imgs_records(config_path='config.json'):
     # 3. 初始化FeishuSheet实例
     try:
         feishu_sheet = FeishuSheet(app_id, app_secret)
-        print("成功初始化FeishuSheet实例")
     except Exception as e:
         print(f"初始化FeishuSheet失败: {str(e)}")
         return []
     
-    # 4. 读取表格数据
+    # 4. 使用过滤条件查询product_source_imgs为空的记录
     try:
-        print("正在读取表格数据...")
-        sheet_data = feishu_sheet.get_sheet_data(app_token, table_id)
+        # 使用指定的JSON格式过滤条件
+        filter_formula = {
+            "conjunction": "and",
+            "conditions": [{
+                "field_name": "product_source_imgs",
+                "operator": "isEmpty",
+                "value": []
+            }]
+        }
         
-        if not sheet_data:
-            print("读取表格数据失败")
+        result = feishu_sheet.get_records_by_filter(
+            app_token=app_token,
+            table_id=table_id,
+            filter_formula=filter_formula,  # 过滤条件：product_source_imgs为空
+            get_all=True
+        )
+        
+        if not result:
+            print("查询记录失败")
             return []
         
-        print("成功读取表格数据")
-        
     except Exception as e:
-        print(f"读取表格数据失败: {str(e)}")
+        print(f"查询记录失败: {str(e)}")
         return []
     
-    # 5. 筛选product_source_imgs为空的记录
-    # 从日志中看到记录在items字段中，而不是records字段
-    records = sheet_data.get('data', {}).get('items', [])
-    print(f"共读取到 {len(records)} 条记录")
+    # 5. 处理查询结果
+    # 从响应中提取记录
+    records = result.get('data', {}).get('items', [])
     
+    # 处理 items 为 None 的情况
+    if records is None:
+        records = []
+    
+    # 提取product_id和record_id
     empty_product_source_imgs_records = []
     
     for record in records:
         record_id = record.get('record_id') or record.get('id')
         fields = record.get('fields', {})
         
-        # 检查product_source_imgs字段是否为空
-        product_source_imgs = fields.get('product_source_imgs')
+        # 提取product_id
         product_id = fields.get('product_id')
         
-        if product_id and record_id and (product_source_imgs is None or product_source_imgs == ''):
+        # 确保product_id和record_id存在
+        if product_id and record_id:
             empty_product_source_imgs_records.append({
                 'product_id': product_id,
                 'record_id': record_id
             })
     
-    print(f"找到 {len(empty_product_source_imgs_records)} 条product_source_imgs为空的记录")
+    print(f"找到 {len(empty_product_source_imgs_records)} 条product_source_imgs为None的记录")
     
     return empty_product_source_imgs_records
 
@@ -711,7 +724,7 @@ def main_process_empty_product_source_imgs():
     
     # 4. 创建TikTokProductScraperPlaywright实例
     try:
-        scraper = TikTokProductScraperPlaywright(headless=False)  # 使用默认值headless=False
+        scraper = TikTokProductScraperPlaywright()
         print("成功初始化TikTokProductScraperPlaywright实例")
     except Exception as e:
         print(f"初始化TikTokProductScraperPlaywright失败: {str(e)}")
