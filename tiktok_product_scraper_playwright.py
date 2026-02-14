@@ -608,6 +608,10 @@ def get_empty_product_source_imgs_records(config_path='config.json'):
         # 提取product_id
         product_id = fields.get('product_id')
         
+        # 处理product_id格式，确保获取纯数字字符串
+        if isinstance(product_id, list) and len(product_id) > 0 and isinstance(product_id[0], dict):
+            product_id = product_id[0].get('text', '')
+        
         # 确保product_id和record_id存在
         if product_id and record_id:
             empty_product_source_imgs_records.append({
