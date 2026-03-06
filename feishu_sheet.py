@@ -488,3 +488,55 @@ class FeishuSheet:
             print(f"请求异常: {str(e)}")
             logging.error(f"根据条件查找记录异常: {str(e)}")
             return None
+
+    def batch_delete_records(self, app_token, table_id, record_ids):
+        """
+        批量删除记录，每次最多 500 条
+        record_ids: 记录 ID 列表
+        返回成功删除的总数
+        """
+        token = self.ensure_token()
+        if not token:
+            return 0
+        url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records/batch_delete"
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        deleted = 0
+        for i in range(0, len(record_ids), 500):
+            batch = record_ids[i:i+500]
+            result = requests.post(url, headers=headers, json={"records": batch}).json()
+            if result.get("code") == 0:
+                deleted += len(batch)
+            else:
+                logging.error(f"批量删除失败: {result.get('msg')}")
+        logging.info(f"批量删除完成，共删除 {deleted} 条记录")
+        return deleted
+
+    def delete_duplicate_records(self, app_token, table_id, duplicate_field="重复", duplicate_value="重复"):
+        """
+        删除重复字段值为指定值的所有记录
+        app_token: 应用 token
+        table_id: 表格 ID
+        duplicate_field: 标记重复的字段名，默认为"重复"
+        duplicate_value: 重复字段的值，默认为"重复"
+        """
+        filter_formula = {
+            "conjunction": "and",
+            "conditions": [
+                {
+                    "field_name": duplicate_field,
+                    "operator": "is",
+                    "value": [duplicate_value]
+                }
+            ]
+        }
+        result = self.get_records_by_filter(app_token, table_id, filter_formula, get_all=True)
+        if not result:
+            return 0
+
+        items = result.get("data", {}).get("items", []) or []
+        if not items:
+            logging.info("没有找到重复记录")
+            return 0
+
+        record_ids = [item["record_id"] for item in items if item.get("record_id")]
+        return self.batch_delete_records(app_token, table_id, record_ids)

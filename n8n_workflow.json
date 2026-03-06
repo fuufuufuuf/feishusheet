@@ -1,0 +1,68 @@
+{
+  "name": "TikTok Scraper Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "hours", "hoursInterval": 1 }] }
+      },
+      "name": "Every Hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://lauren-moodier-adjunctly.ngrok-free.dev/run/monitor",
+        "options": {}
+      },
+      "name": "Start Monitor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "monitor-done",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "name": "Wait Monitor Done",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [440, 0],
+      "webhookId": "monitor-done"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://lauren-moodier-adjunctly.ngrok-free.dev/run/product",
+        "options": {}
+      },
+      "name": "Start Product",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "product-done",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "name": "Wait Product Done",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [880, 0],
+      "webhookId": "product-done"
+    }
+  ],
+  "connections": {
+    "Every Hour": { "main": [[{ "node": "Start Monitor", "type": "main", "index": 0 }]] },
+    "Start Monitor": { "main": [[{ "node": "Wait Monitor Done", "type": "main", "index": 0 }]] },
+    "Wait Monitor Done": { "main": [[{ "node": "Start Product", "type": "main", "index": 0 }]] },
+    "Start Product": { "main": [[{ "node": "Wait Product Done", "type": "main", "index": 0 }]] }
+  }
+}

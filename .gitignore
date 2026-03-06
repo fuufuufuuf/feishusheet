@@ -29,3 +29,9 @@ test-results/
 # Logs
 *.log
 logs/
+
+# Secrets / configs
+config.json
+ngrok.yml
+
+.claude/

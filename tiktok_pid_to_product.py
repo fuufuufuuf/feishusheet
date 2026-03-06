@@ -443,7 +443,7 @@ class TikTokProductScraperPlaywright:
                             urls_list.append(img_data.get('url', ''))
                         else:
                             urls_list.append(str(img_data))
-                    image_urls_str = ';'.join(urls_list)
+                    image_urls_str = '\n'.join(urls_list)
                 
                 # 更新多维表格
                 if feishu_sheet and app_token and table_id:
@@ -565,7 +565,7 @@ class TikTokProductScraperPlaywright:
                         urls_list.append(img_data.get('url', ''))
                     else:
                         urls_list.append(str(img_data))
-                image_urls_str = ';'.join(urls_list)
+                image_urls_str = '\n'.join(urls_list)
             
             # 更新多维表格
             if feishu_sheet and app_token and table_id:
