@@ -384,6 +384,14 @@ async def update_titkok_video():
             if 'context' in locals():
                 await context.close()
 
+    # 删除重复项
+    print("\n=== 删除重复记录 ===")
+    try:
+        deleted = feishu_sheet.delete_duplicate_records(app_token, table_id)
+        print(f"删除重复记录完成，共删除 {deleted} 条")
+    except Exception as e:
+        print(f"删除重复记录失败: {str(e)}")
+
 
 if __name__ == "__main__":
 

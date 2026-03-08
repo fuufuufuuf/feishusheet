@@ -108,14 +108,27 @@ def test_write_data():
         print("创建记录失败")
 
 
+def test_delete_duplicates():
+    """
+    测试批量删除重复记录
+    """
+    print("\n=== 测试批量删除重复记录 ===")
+    feishu = FeishuSheet(APP_ID, APP_SECRET)
+    deleted = feishu.delete_duplicate_records(APP_TOKEN, TABLE_ID)
+    print(f"删除重复记录完成，共删除 {deleted} 条")
+
+
 if __name__ == "__main__":
     # 测试认证功能
     test_auth()
-    
+
     # 测试读取数据功能
-    test_read_data()
-    
+    #test_read_data()
+
     # 测试写入数据功能
-    test_write_data()
-    
+    #test_write_data()
+
+    # 测试批量删除重复记录
+    test_delete_duplicates()
+
     print("\n=== 测试完成 ===")

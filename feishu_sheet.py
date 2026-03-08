@@ -394,16 +394,17 @@ class FeishuSheet:
             
             if not get_all:
                 # 只获取一页数据
-                payload = {
+                payload = {}
+                params = {
                     "page_size": page_size,
                     "page_token": page_token
                 }
-                
+
                 # 添加过滤条件
                 if filter_formula:
                     payload["filter"] = filter_formula
-                
-                response = requests.post(url, headers=headers, json=payload)
+
+                response = requests.post(url, headers=headers, params=params, json=payload)
                 print(f"响应状态码: {response.status_code}")
                 print(f"响应内容: {response.text}")
                 
@@ -428,24 +429,21 @@ class FeishuSheet:
                 current_page_token = page_token
                 
                 while True:
-                    payload = {
+                    params = {
                         "page_size": page_size,
                         "page_token": current_page_token
                     }
-                    
+                    payload = {}
+
                     # 添加过滤条件
                     if filter_formula:
                         payload["filter"] = filter_formula
-                    
-                    response = requests.post(url, headers=headers, json=payload)
-                    print(f"响应状态码: {response.status_code}")
-                    print(f"响应内容: {response.text}")
+
+                    response = requests.post(url, headers=headers, params=params, json=payload)
                     
                     # 尝试解析响应
                     try:
-                        result = response.json()
-                        print(f"解析后的响应: {result}")
-                        
+                        result = response.json()                        
                         if result.get("code") == 0:
                             data = result.get("data", {})
                             items = data.get("items", [])
