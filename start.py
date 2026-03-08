@@ -18,5 +18,5 @@ print("ngrok and uvicorn started. Logs -> n8n.log")
 try:
     uvicorn.wait()
 finally:
-    #ngrok.terminate()
+    # ngrok.terminate()
     log.close()
