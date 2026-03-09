@@ -13,7 +13,7 @@ from feishu_sheet import FeishuSheet
 
 
 class TikTokProductScraperPlaywright:
-    def __init__(self, headless=False, user_data_dir=None, profile_name=None, max_tabs=5):
+    def __init__(self, headless=False, user_data_dir=None, profile_name=None, max_tabs=3):
         """
         初始化TikTok产品爬虫 (Playwright版)
         :param headless: 是否以无头模式运行浏览器
@@ -44,24 +44,9 @@ class TikTokProductScraperPlaywright:
         
         self.playwright = sync_playwright().start()
         
-        # 如果指定了用户数据目录，则使用持久化上下文
-        if self.user_data_dir:
-            try:
-                self.context = self.playwright.chromium.launch_persistent_context(
-                    user_data_dir=self.user_data_dir,
-                    headless=self.headless,
-                    args=[f"--profile-directory={self.profile_name or 'Default'}"],
-                    channel="chrome"
-                )
-                print("使用指定的用户数据目录打开浏览器")
-            except Exception as e:
-                print(f"无法使用指定的用户数据目录 (可能Chrome已在使用中): {e}")
-                print("切换到独立的浏览器实例")
-                self.browser = self.playwright.chromium.launch(headless=self.headless)
-        else:
-            # 启动浏览器
-            self.browser = self.playwright.chromium.launch(headless=self.headless)
-            print("打开独立的浏览器实例")
+        # 使用Playwright的Chrome浏览器启动
+        self.browser = self.playwright.chromium.launch(headless=self.headless)
+        print("打开Chromium浏览器实例")
         
     def create_page(self):
         """
