@@ -65,3 +65,16 @@ def run_delete_duplicates(duplicate_field: str = "重复", duplicate_value: str 
         duplicate_value,
     )
     return {"status": "success", "deleted": deleted}
+
+
+@app.get("/run/pending-upload")
+def run_pending_upload(handle: str):
+    feishu_cfg = _config["feishu"]
+    bitable_cfg = _config["bitable"]
+    sheet = FeishuSheet(feishu_cfg["app_id"], feishu_cfg["app_secret"])
+    items = sheet.get_pending_upload_records(
+        bitable_cfg["app_token"],
+        bitable_cfg["table_id"],
+        handle,
+    )
+    return {"status": "success", "count": len(items), "items": items}
