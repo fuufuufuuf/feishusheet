@@ -563,6 +563,11 @@ class FeishuSheet:
                     "field_name": "video_upload_device",
                     "operator": "isEmpty",
                     "value": []
+                },
+                {
+                    "field_name": "ai_video_urls",
+                    "operator": "isNotEmpty",
+                    "value": []
                 }
             ]
         }
