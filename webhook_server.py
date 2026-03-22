@@ -8,6 +8,7 @@ from tiktok_account_monitor import update_titkok_video
 from tiktok_pid_to_product import main_process_empty_product_source_imgs
 from feishu_sheet import FeishuSheet
 
+# https://lauren-moodier-adjunctly.ngrok-free.dev
 app = FastAPI()
 
 with open("config.json") as f:
