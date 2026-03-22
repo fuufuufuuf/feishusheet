@@ -67,6 +67,22 @@ def run_delete_duplicates(duplicate_field: str = "重复", duplicate_value: str 
     return {"status": "success", "deleted": deleted}
 
 
+@app.post("/run/update-record")
+def run_update_record(record_id: str, fields: dict):
+    feishu_cfg = _config["feishu"]
+    bitable_cfg = _config["bitable"]
+    sheet = FeishuSheet(feishu_cfg["app_id"], feishu_cfg["app_secret"])
+    result = sheet.update_record(
+        bitable_cfg["app_token"],
+        bitable_cfg["table_id"],
+        record_id,
+        fields,
+    )
+    if result is None:
+        raise HTTPException(status_code=500, detail="update record failed")
+    return {"status": "success", "data": result}
+
+
 @app.get("/run/pending-upload")
 def run_pending_upload(handle: str):
     feishu_cfg = _config["feishu"]
