@@ -538,3 +538,40 @@ class FeishuSheet:
 
         record_ids = [item["record_id"] for item in items if item.get("record_id")]
         return self.batch_delete_records(app_token, table_id, record_ids)
+
+    def get_pending_upload_records(self, app_token, table_id, handle):
+        """
+        根据 handle 查询：是否生成视频=是，且 video_upload_device 为空的记录
+        app_token: 应用 token
+        table_id: 表格 ID
+        handle: 账号 handle
+        """
+        filter_formula = {
+            "conjunction": "and",
+            "conditions": [
+                {
+                    "field_name": "handle",
+                    "operator": "is",
+                    "value": [handle]
+                },
+                {
+                    "field_name": "是否生成视频",
+                    "operator": "is",
+                    "value": ["是"]
+                },
+                {
+                    "field_name": "video_upload_device",
+                    "operator": "isEmpty",
+                    "value": []
+                }
+            ]
+        }
+
+        result = self.get_records_by_filter(app_token, table_id, filter_formula, get_all=True)
+        if not result:
+            logging.error("查询待上传记录失败")
+            return []
+
+        items = result.get("data", {}).get("items", []) or []
+        logging.info(f"handle={handle} 下，已生成视频但未上传的记录共 {len(items)} 条")
+        return items
