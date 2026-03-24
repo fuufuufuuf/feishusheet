@@ -541,7 +541,7 @@ class FeishuSheet:
 
     def get_pending_upload_records(self, app_token, table_id, handle):
         """
-        根据 handle 查询：是否生成视频=是，且 video_upload_device 为空的记录
+        根据 handle 查询：是否生成视频=是，post_time 为空的记录， video_upload_device 不为空的记录，这些记录表示已生成视频但未上传
         app_token: 应用 token
         table_id: 表格 ID
         handle: 账号 handle
@@ -560,12 +560,17 @@ class FeishuSheet:
                     "value": ["是"]
                 },
                 {
-                    "field_name": "video_upload_device",
+                    "field_name": "post_time",
                     "operator": "isEmpty",
                     "value": []
                 },
                 {
                     "field_name": "ai_video_urls",
+                    "operator": "isNotEmpty",
+                    "value": []
+                },
+                {
+                    "field_name": "video_upload_device",
                     "operator": "isNotEmpty",
                     "value": []
                 }
