@@ -15,15 +15,15 @@ import sys
 from feishu_sheet import FeishuSheet
 
 
-async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table_id=None):
+async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table_id=None, existing_video_ids=None):
         """
         拦截并分析网络请求
         """
         # 存储所有请求
         requests_data = []
         responses_data = []
-        # 存储异步任务
-        tasks = []
+        # 标记是否已处理过第一个 itemList
+        first_item_list_done = [False]
 
         def log_request(request):
             """
@@ -53,14 +53,14 @@ async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table
                 #print(f"[请求体] {request.post_data}")
                 pass
 
-        def log_response(response):
+        async def log_response(response):
             """
             记录响应信息
             """
             # 过滤只包含 item_list 的请求的响应
             if "item_list" not in response.request.url:
                 return
-            
+
             response_info = {
                 "url": response.url,
                 "status": response.status,
@@ -69,86 +69,81 @@ async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table
                 "timestamp": time.time()
             }
             responses_data.append(response_info)
-            #print(f"\n[响应] {response.status} {response.status_text} {response.url}")
-            #print(f"[响应头] {dict(response.headers)}")
             # 尝试获取响应体（仅针对特定内容类型）
             content_type = response.headers.get("content-type", "")
             if any(ct in content_type for ct in ["application/json", "text/plain", "text/html"]):
-                async def get_response_body():
-                    try:
-                        body = await response.body()
-                        if body:
-                            try:
-                                # 尝试解析为 JSON
-                                json_body = json.loads(body.decode('utf-8', errors='ignore'))
-                                #print(f"[响应体] {json.dumps(json_body, indent=2, ensure_ascii=False)}")
-                                
-                                # 提取和处理 itemList 中的 anchors.extra 字段
-                                if "itemList" in json_body:
-                                    item_list = json_body["itemList"]
-                                    print("\n[解析 itemList] 找到 itemList 数组，包含 {} 项".format(len(item_list)))
-                                    
-                                    for i, item in enumerate(item_list):
-                                        if "anchors" in item and isinstance(item["anchors"], list) and item["anchors"]:
-                                            first_anchor = item["anchors"][0]
-                                            if "extra" in first_anchor and isinstance(first_anchor["extra"], str):
-                                                extra_str = first_anchor["extra"]
-                                                #print("\n[解析 anchors] 第 {} 项的 anchors 第一个元素的 extra 字段:".format(i+1))
-                                                #print(f"原始字符串: {extra_str}")
-                                                
-                                                # 尝试将 extra 字符串解析为 JSON
+                try:
+                    body = await response.body()
+                    if body:
+                        try:
+                            # 尝试解析为 JSON
+                            json_body = json.loads(body.decode('utf-8', errors='ignore'))
+
+                            # 提取和处理 itemList 中的 anchors.extra 字段
+                            if "itemList" in json_body:
+                                if first_item_list_done[0]:
+                                    print("\n[跳过 itemList] 已处理过第一个 itemList，跳过后续数据")
+                                    return
+                                first_item_list_done[0] = True
+                                item_list = json_body["itemList"]
+                                print("\n[解析 itemList] 找到 itemList 数组，包含 {} 项".format(len(item_list)))
+
+                                for i, item in enumerate(item_list):
+                                    if "anchors" in item and isinstance(item["anchors"], list) and item["anchors"]:
+                                        first_anchor = item["anchors"][0]
+                                        if "extra" in first_anchor and isinstance(first_anchor["extra"], str):
+                                            extra_str = first_anchor["extra"]
+
+                                            # 尝试将 extra 字符串解析为 JSON
+                                            try:
+                                                extra_json = json.loads(extra_str)[0]
+                                                if 'extra' not in extra_json:
+                                                    continue
+                                                # 移除不需要的字段
+                                                unwanted_fields = ['icon', 'actions', 'component_key', 'anchor_strong']
+                                                for field in unwanted_fields:
+                                                    if field in extra_json:
+                                                        del extra_json[field]
                                                 try:
-                                                    extra_json = json.loads(extra_str)[0]
-                                                    if 'extra' not in extra_json:
-                                                        continue                                                    
-                                                    # 移除不需要的字段
-                                                    unwanted_fields = ['icon', 'actions', 'component_key', 'anchor_strong']
-                                                    for field in unwanted_fields:
-                                                        if field in extra_json:
-                                                            del extra_json[field]
-                                                    try:
-                                                        inner_extra = json.loads(extra_json['extra'])
-                                                        # 只保留 product_id, title, img 三个字段
-                                                        if 'product_id' in inner_extra:
-                                                            extra_json['product_id'] = inner_extra['product_id']
-                                                        if 'title' in inner_extra:
-                                                            extra_json['title'] = inner_extra['title']
-                                                        if 'img' in inner_extra:
-                                                            extra_json['img'] = inner_extra['img']
-                                                    except json.JSONDecodeError as inner_e:
-                                                        print(f"解析 inner extra 失败: {str(inner_e)}")
-                                                    
-                                                    #print("解析结果 (JSON):")
-                                                    #print(json.dumps(extra_json, indent=2, ensure_ascii=False))
-                                                    
-                                                    # 写入飞书表格
-                                                    if feishu_sheet and app_token and table_id:
-                                                        # 构建字段数据
-                                                        fields = {
-                                                            "handle": item.get('author', '').get('uniqueId', ''),
-                                                            "video_id": item.get('id', ''),
-                                                            "video_create_time": str(item.get('createTime', '')),
-                                                            "video_title": item.get('desc', ''),                                                                                                              
-                                                            "product_id": extra_json.get('id', ''),
-                                                            "product_title": extra_json.get('title', ''),
-                                                            "product_keyword": extra_json.get('keyword', ''),
-                                                            "product_imgs": str(extra_json.get('img', '')) if isinstance(extra_json.get('img'), list) else extra_json.get('img', ''),
-                                                        }
-                                                        # 写入记录
-                                                        result = feishu_sheet.create_record(app_token, table_id, fields, f"第 {i+1} 项")
-                                                        if not result:
-                                                            print("写入飞书表格失败")
-                                                except json.JSONDecodeError as e:
-                                                    print(f"解析失败: {str(e)}")
-                            except:
-                                # 非 JSON 格式
-                                print(f"[响应体] {body.decode('utf-8', errors='ignore')[:500]}...")
-                    except Exception as e:
-                        print(f"[获取响应体失败] {str(e)}")
-                
-                # 异步获取响应体
-                task = asyncio.create_task(get_response_body())
-                tasks.append(task)
+                                                    inner_extra = json.loads(extra_json['extra'])
+                                                    # 只保留 product_id, title, img 三个字段
+                                                    if 'product_id' in inner_extra:
+                                                        extra_json['product_id'] = inner_extra['product_id']
+                                                    if 'title' in inner_extra:
+                                                        extra_json['title'] = inner_extra['title']
+                                                    if 'img' in inner_extra:
+                                                        extra_json['img'] = inner_extra['img']
+                                                except json.JSONDecodeError as inner_e:
+                                                    print(f"解析 inner extra 失败: {str(inner_e)}")
+
+                                                # 写入飞书表格
+                                                if feishu_sheet and app_token and table_id:
+                                                    # 检查 video_id 是否已存在
+                                                    video_id = str(item.get('id', ''))
+                                                    if existing_video_ids and video_id in existing_video_ids:
+                                                        continue
+                                                    # 构建字段数据
+                                                    fields = {
+                                                        "handle": item.get('author', '').get('uniqueId', ''),
+                                                        "video_id": item.get('id', ''),
+                                                        "video_create_time": str(item.get('createTime', '')),
+                                                        "video_title": item.get('desc', ''),
+                                                        "product_id": extra_json.get('id', ''),
+                                                        "product_title": extra_json.get('title', ''),
+                                                        "product_keyword": extra_json.get('keyword', ''),
+                                                        "product_imgs": str(extra_json.get('img', '')) if isinstance(extra_json.get('img'), list) else extra_json.get('img', ''),
+                                                    }
+                                                    # 写入记录
+                                                    result = feishu_sheet.create_record(app_token, table_id, fields, f"第 {i+1} 项")
+                                                    if not result:
+                                                        print("写入飞书表格失败")
+                                            except json.JSONDecodeError as e:
+                                                print(f"解析失败: {str(e)}")
+                        except:
+                            # 非 JSON 格式
+                            print(f"[响应体] {body.decode('utf-8', errors='ignore')[:500]}...")
+                except Exception as e:
+                    print(f"[获取响应体失败] {str(e)}")
 
         # 设置请求和响应监听器
         page.on("request", log_request)
@@ -166,12 +161,6 @@ async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table
         # 等待 5 秒，捕获更多网络请求
         print("\n=== 等待 5 秒捕获更多请求 ===")
         await asyncio.sleep(5)
-        # 等待所有异步任务完成
-        if tasks:
-            print(f"\n=== 等待 {len(tasks)} 个异步任务完成 ===")
-            await asyncio.gather(*tasks)
-            print("所有异步任务已完成")
-
         # 统计请求数量
         print(f"\n=== 统计信息 ===")
         print(f"总请求数: {len(requests_data)}")
@@ -369,8 +358,37 @@ async def update_titkok_video():
             for i, url in enumerate(url_list, 1):
                 print(f"\n=== 处理第 {i} 个URL: {url} ===")
                 try:
+                    # 从URL中提取handle
+                    handle = url.split("@")[-1] if "@" in url else ""
+
+                    # 从飞书表格读取该handle已有的video_id
+                    existing_video_ids = set()
+                    if handle and feishu_sheet and app_token and table_id:
+                        print(f"正在读取 handle={handle} 的已有 video_id...")
+                        filter_formula = {
+                            "conjunction": "and",
+                            "conditions": [
+                                {
+                                    "field_name": "handle",
+                                    "operator": "is",
+                                    "value": [handle]
+                                }
+                            ]
+                        }
+                        result = feishu_sheet.get_records_by_filter(app_token, table_id, filter_formula, get_all=True, field_names=["video_id"])
+                        if result:
+                            items = result.get("data", {}).get("items", []) or []
+                            for item in items:
+                                vid = item.get("fields", {}).get("video_id", "")
+                                # 处理飞书富文本格式
+                                if isinstance(vid, list):
+                                    vid = vid[0].get("text", "") if vid else ""
+                                if vid:
+                                    existing_video_ids.add(str(vid))
+                            print(f"已有 {len(existing_video_ids)} 个 video_id")
+
                     # 拦截请求
-                    await intercept_requests(page, url, feishu_sheet, app_token, table_id)
+                    await intercept_requests(page, url, feishu_sheet, app_token, table_id, existing_video_ids)
                     print(f"URL {url} 处理成功")
                 except Exception as e:
                     print(f"URL {url} 处理失败: {str(e)}")
@@ -383,14 +401,6 @@ async def update_titkok_video():
             print("\n=== 关闭浏览器 ===")
             if 'context' in locals():
                 await context.close()
-
-    # 删除重复项
-    print("\n=== 删除重复记录 ===")
-    try:
-        deleted = feishu_sheet.delete_duplicate_records(app_token, table_id)
-        print(f"删除重复记录完成，共删除 {deleted} 条")
-    except Exception as e:
-        print(f"删除重复记录失败: {str(e)}")
 
 
 if __name__ == "__main__":

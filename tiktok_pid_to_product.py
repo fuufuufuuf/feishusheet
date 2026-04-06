@@ -152,7 +152,7 @@ class TikTokProductScraperPlaywright:
                 if not hasattr(self, 'page'):
                     self.page = self.create_page()
                 
-                self.page.goto(url, wait_until="networkidle", timeout=60000)
+                self.page.goto(url, wait_until="domcontentloaded", timeout=60000)
                 
                 # 检查是否遇到安全验证页面
                 security_check_detected = False
@@ -378,6 +378,10 @@ class TikTokProductScraperPlaywright:
             """
             任务包装器，用于线程池
             """
+            # 为当前线程创建全新的事件循环，避免线程复用时残留的 event loop
+            # 导致 Playwright sync API 报 "using Sync API inside asyncio loop"
+            asyncio.set_event_loop(asyncio.new_event_loop())
+
             # 为每个任务创建一个新的浏览器实例
             # 注意：Playwright不支持在多个线程中共享同一个浏览器实例
             # 因此我们需要为每个线程创建一个新的浏览器实例
@@ -616,8 +620,8 @@ class TikTokProductScraperPlaywright:
         
         while retry_count < max_retries:
             try:
-                # 增加超时时间到60秒，使用networkidle等待策略
-                page.goto(url, wait_until="networkidle", timeout=60000)
+                # 增加超时时间到60秒，使用domcontentloaded等待策略（networkidle在TikTok上容易超时）
+                page.goto(url, wait_until="domcontentloaded", timeout=60000)
                 
                 # 检查是否遇到安全验证页面
                 security_check_detected = False

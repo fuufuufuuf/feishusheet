@@ -370,7 +370,7 @@ class FeishuSheet:
             logging.error(f"删除记录异常: {str(e)}")
             return None
     
-    def get_records_by_filter(self, app_token, table_id, filter_formula, page_size=100, page_token="", get_all=False):
+    def get_records_by_filter(self, app_token, table_id, filter_formula, page_size=100, page_token="", get_all=False, field_names=None):
         """
         根据条件查找记录
         app_token: 应用 token
@@ -403,6 +403,8 @@ class FeishuSheet:
                 # 添加过滤条件
                 if filter_formula:
                     payload["filter"] = filter_formula
+                if field_names:
+                    payload["field_names"] = field_names
 
                 response = requests.post(url, headers=headers, params=params, json=payload)
                 print(f"响应状态码: {response.status_code}")
@@ -438,6 +440,8 @@ class FeishuSheet:
                     # 添加过滤条件
                     if filter_formula:
                         payload["filter"] = filter_formula
+                    if field_names:
+                        payload["field_names"] = field_names
 
                     response = requests.post(url, headers=headers, params=params, json=payload)
                     
@@ -509,35 +513,6 @@ class FeishuSheet:
         logging.info(f"批量删除完成，共删除 {deleted} 条记录")
         return deleted
 
-    def delete_duplicate_records(self, app_token, table_id, duplicate_field="重复", duplicate_value="重复"):
-        """
-        删除重复字段值为指定值的所有记录
-        app_token: 应用 token
-        table_id: 表格 ID
-        duplicate_field: 标记重复的字段名，默认为"重复"
-        duplicate_value: 重复字段的值，默认为"重复"
-        """
-        filter_formula = {
-            "conjunction": "and",
-            "conditions": [
-                {
-                    "field_name": duplicate_field,
-                    "operator": "is",
-                    "value": [duplicate_value]
-                }
-            ]
-        }
-        result = self.get_records_by_filter(app_token, table_id, filter_formula, get_all=True)
-        if not result:
-            return 0
-
-        items = result.get("data", {}).get("items", []) or []
-        if not items:
-            logging.info("没有找到重复记录")
-            return 0
-
-        record_ids = [item["record_id"] for item in items if item.get("record_id")]
-        return self.batch_delete_records(app_token, table_id, record_ids)
 
     def get_pending_upload_records(self, app_token, table_id, handle):
         """
