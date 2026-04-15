@@ -122,12 +122,21 @@ async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table
                                                     video_id = str(item.get('id', ''))
                                                     if existing_video_ids and video_id in existing_video_ids:
                                                         continue
+                                                    # 提取视频首图（cover / originCover / dynamicCover）
+                                                    video_obj = item.get('video', {}) or {}
+                                                    cover_urls = [
+                                                        video_obj.get('cover', ''),
+                                                        video_obj.get('originCover', ''),
+                                                        video_obj.get('dynamicCover', ''),
+                                                    ]
+                                                    video_cover = "\n".join([u for u in cover_urls if u])
                                                     # 构建字段数据
                                                     fields = {
                                                         "handle": item.get('author', '').get('uniqueId', ''),
                                                         "video_id": item.get('id', ''),
                                                         "video_create_time": str(item.get('createTime', '')),
                                                         "video_title": item.get('desc', ''),
+                                                        "video_cover": video_cover,
                                                         "product_id": extra_json.get('id', ''),
                                                         "product_title": extra_json.get('title', ''),
                                                         "product_keyword": extra_json.get('keyword', ''),
