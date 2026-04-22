@@ -13,6 +13,7 @@ import random
 import platform
 import sys
 from feishu_sheet import FeishuSheet
+from cloudinary_helper import upload_url_to_cloudinary
 
 
 async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table_id=None, existing_video_ids=None):
@@ -122,12 +123,22 @@ async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table
                                                     video_id = str(item.get('id', ''))
                                                     if existing_video_ids and video_id in existing_video_ids:
                                                         continue
+                                                    # 提取视频封面并转存到 Cloudinary tiktok/pics
+                                                    video_info = item.get('video') or {}
+                                                    raw_cover = video_info.get('cover') or video_info.get('originCover') or ''
+                                                    cover_public_id = video_id or None
+                                                    cloud_cover_url = upload_url_to_cloudinary(
+                                                        raw_cover,
+                                                        folder="tiktok/pics",
+                                                        public_id=cover_public_id,
+                                                    ) if raw_cover else ''
                                                     # 构建字段数据
                                                     fields = {
                                                         "handle": item.get('author', '').get('uniqueId', ''),
                                                         "video_id": item.get('id', ''),
                                                         "video_create_time": str(item.get('createTime', '')),
                                                         "video_title": item.get('desc', ''),
+                                                        "video_cover": cloud_cover_url or raw_cover,
                                                         "product_id": extra_json.get('id', ''),
                                                         "product_title": extra_json.get('title', ''),
                                                         "product_keyword": extra_json.get('keyword', ''),
