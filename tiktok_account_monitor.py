@@ -107,13 +107,10 @@ async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table
                                                         del extra_json[field]
                                                 try:
                                                     inner_extra = json.loads(extra_json['extra'])
-                                                    # 只保留 product_id, title, img 三个字段
                                                     if 'product_id' in inner_extra:
                                                         extra_json['product_id'] = inner_extra['product_id']
                                                     if 'title' in inner_extra:
                                                         extra_json['title'] = inner_extra['title']
-                                                    if 'img' in inner_extra:
-                                                        extra_json['img'] = inner_extra['img']
                                                 except json.JSONDecodeError as inner_e:
                                                     print(f"解析 inner extra 失败: {str(inner_e)}")
 
@@ -141,8 +138,6 @@ async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table
                                                         "video_cover": cloud_cover_url or raw_cover,
                                                         "product_id": extra_json.get('id', ''),
                                                         "product_title": extra_json.get('title', ''),
-                                                        "product_keyword": extra_json.get('keyword', ''),
-                                                        "product_imgs": str(extra_json.get('img', '')) if isinstance(extra_json.get('img'), list) else extra_json.get('img', ''),
                                                     }
                                                     # 写入记录
                                                     result = feishu_sheet.create_record(app_token, table_id, fields, f"第 {i+1} 项")
@@ -285,12 +280,9 @@ async def update_titkok_video():
         print(f"\n生成了 {len(url_list)} 个URL")
         for url in url_list:
             print(f"- {url}")
-    elif isinstance(urls, list):
-        # 如果提供了URL列表，直接使用
-        url_list = urls
     else:
-        # 如果只提供了单个URL，转为列表
-        url_list = [urls]
+        print("未获取到任何 handle，无 URL 可处理")
+        return
     
     # 根据操作系统获取 Chrome profile 路径和可执行文件路径
     system = platform.system()
