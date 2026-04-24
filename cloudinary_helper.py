@@ -50,3 +50,35 @@ def upload_url_to_cloudinary(url, folder="tiktok/pics", public_id=None):
     except Exception as e:
         logging.error(f"Cloudinary 上传失败 url={url}: {str(e)}")
         return None
+
+def upload_file_to_cloudinary(
+    local_path: str,
+    folder: str = "tiktok/videos",
+    public_id: str | None = None,
+    resource_type: str = "video",
+    overwrite: bool = True,
+    timeout: int = 600,
+) -> str:
+    """
+    上传本地文件到 Cloudinary,返回 secure_url;失败返回空字符串。
+    默认: resource_type='video', folder='tiktok/videos'
+    """
+    if not local_path:
+        return ""
+    try:
+        configure_cloudinary()
+        resp = cloudinary.uploader.upload_large(
+            local_path,
+            folder=folder,
+            public_id=public_id,
+            resource_type=resource_type,
+            overwrite=overwrite,
+            use_filename=False,
+            unique_filename=False,
+            chunk_size=6_000_000,   # 6MB 分片,TikTok 视频一般很小,也能兼容大文件
+            timeout=timeout,
+        )
+        return resp.get("secure_url") or resp.get("url") or ""
+    except Exception as e:
+        print(f"[Cloudinary 上传失败] {local_path} -> {e}")
+        return ""
