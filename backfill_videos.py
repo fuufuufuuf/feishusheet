@@ -18,7 +18,7 @@ from playwright.async_api import async_playwright
 
 from feishu_sheet import FeishuSheet
 from cloudinary_helper import upload_file_to_cloudinary
-from tiktok_account_monitor import download_video_via_page
+from tiktok_account_monitor import download_video_via_page, download_audio_via_page
 
 
 _UNIVERSAL_DATA_RE = re.compile(
@@ -129,25 +129,27 @@ def _resolve_chrome():
 async def backfill_empty_videos():
     feishu_sheet, app_token, table_id, out_dir, include_create_time = _load_config()
 
-    # 查询 "视频文件" 为空,且 handle / video_id 都存在的记录
+    # 查询 "视频文件" 或 "music info" 至少一个为空的记录。
+    # Feishu search 的 conjunction=or 不能再嵌套 and 限制 handle/video_id,
+    # 所以在代码里二次过滤。
     filter_formula = {
-        "conjunction": "and",
+        "conjunction": "or",
         "conditions": [
             {"field_name": "视频文件", "operator": "isEmpty", "value": []},
-            {"field_name": "handle", "operator": "isNotEmpty", "value": []},
-            {"field_name": "video_id", "operator": "isNotEmpty", "value": []},
+            {"field_name": "music info", "operator": "isEmpty", "value": []},
         ],
     }
     result = feishu_sheet.get_records_by_filter(
         app_token, table_id, filter_formula,
-        get_all=True, field_names=["handle", "video_id"],
+        get_all=True,
+        field_names=["handle", "video_id", "视频文件", "music info"],
     )
     if not result:
         print("查询待回填记录失败")
         return
 
     records = result.get("data", {}).get("items", []) or []
-    print(f"\n=== 共找到 {len(records)} 条 '视频文件' 为空的记录 ===")
+    print(f"\n=== 共找到 {len(records)} 条 '视频文件' 或 'music info' 为空的记录 ===")
     if not records:
         return
 
@@ -182,12 +184,25 @@ async def backfill_empty_videos():
                 fields = rec.get("fields", {}) or {}
                 handle = _unwrap_feishu_text(fields.get("handle")).strip()
                 video_id = _unwrap_feishu_text(fields.get("video_id")).strip()
+                cur_video_file = _unwrap_feishu_text(fields.get("视频文件")).strip()
+                cur_music_info = _unwrap_feishu_text(fields.get("music info")).strip()
 
-                print(f"\n[{i}/{len(records)}] record_id={record_id} handle={handle} video_id={video_id}")
+                need_video = not cur_video_file
+                need_music = not cur_music_info
+
+                print(
+                    f"\n[{i}/{len(records)}] record_id={record_id} "
+                    f"handle={handle} video_id={video_id} "
+                    f"need_video={need_video} need_music={need_music}"
+                )
 
                 if not handle or not video_id:
                     print("  跳过: handle/video_id 缺失")
                     fail += 1
+                    continue
+                if not (need_video or need_music):
+                    # 不应该出现 (filter 已经保证至少一个空),保险起见
+                    print("  跳过: 两列均已填,无需回填")
                     continue
 
                 item = await _fetch_item_from_video_page(page, handle, video_id)
@@ -195,49 +210,99 @@ async def backfill_empty_videos():
                     fail += 1
                     continue
 
+                update_payload = {}
+
+                # ---- 视频文件回填 ----
                 local_path = None
-                try:
-                    local_path = await download_video_via_page(
-                        page, item, out_dir,
-                        include_create_time=include_create_time,
-                    )
-                except Exception as e:
-                    print(f"  [下载异常] {e}")
-                if not local_path:
-                    fail += 1
-                    continue
+                if need_video:
+                    try:
+                        local_path = await download_video_via_page(
+                            page, item, out_dir,
+                            include_create_time=include_create_time,
+                        )
+                    except Exception as e:
+                        print(f"  [下载异常] {e}")
 
-                try:
-                    cloud_video_url = upload_file_to_cloudinary(
-                        local_path,
-                        folder="tiktok/videos",
-                        public_id=video_id,
-                        resource_type="video",
-                    )
-                except Exception as e:
-                    print(f"  [Cloudinary 异常] {e}")
+                    if not local_path:
+                        print("  视频下载失败,跳过本条整体回填")
+                        fail += 1
+                        continue
+
                     cloud_video_url = ""
+                    try:
+                        cloud_video_url = upload_file_to_cloudinary(
+                            local_path,
+                            folder="tiktok/videos",
+                            public_id=video_id,
+                            resource_type="video",
+                        )
+                    except Exception as e:
+                        print(f"  [Cloudinary 异常] {e}")
 
-                if not cloud_video_url:
-                    print("  上传 Cloudinary 失败,保留本地文件用于重试")
+                    if not cloud_video_url:
+                        print("  上传 Cloudinary 失败,保留本地文件用于重试")
+                        fail += 1
+                        continue
+                    update_payload["视频文件"] = cloud_video_url
+
+                # ---- music info 回填 ----
+                local_audio_path = None
+                cloud_audio_url = ""
+                if need_music:
+                    music = item.get("music") or {}
+                    music_id = str(music.get("id", "")).strip()
+                    music_title = str(music.get("title", "") or "")
+                    music_url = f"https://www.tiktok.com/music/-{music_id}" if music_id else ""
+
+                    try:
+                        local_audio_path = await download_audio_via_page(page, item, out_dir)
+                    except Exception as e:
+                        print(f"  [音频异常] {e}")
+                    if local_audio_path:
+                        try:
+                            cloud_audio_url = upload_file_to_cloudinary(
+                                local_audio_path,
+                                folder="tiktok/audio",
+                                public_id=music_id or None,
+                                resource_type="video",
+                            )
+                        except Exception as e:
+                            print(f"  [Cloudinary 音频异常] {e}")
+
+                    if music_url or music_title or cloud_audio_url:
+                        update_payload["music info"] = json.dumps(
+                            {"url": music_url, "title": music_title, "audio": cloud_audio_url},
+                            ensure_ascii=False,
+                        )
+                    else:
+                        print("  itemStruct 中无 music.id/title/playUrl,跳过 music info 回填")
+
+                if not update_payload:
+                    print("  本条没有可更新字段")
                     fail += 1
                     continue
 
                 update_result = feishu_sheet.update_record(
-                    app_token, table_id, record_id, {"视频文件": cloud_video_url},
+                    app_token, table_id, record_id, update_payload,
                 )
                 if not update_result:
                     print("  更新飞书记录失败")
                     fail += 1
                     continue
 
-                print(f"  更新成功 -> {cloud_video_url}")
+                print(f"  更新成功: {list(update_payload.keys())} -> {update_payload}")
                 ok += 1
 
-                # 成功则清理本地文件
-                if os.path.exists(local_path):
+                # 视频上传成功后清理本地文件
+                if local_path and os.path.exists(local_path):
                     try:
                         os.remove(local_path)
+                    except OSError as rm_e:
+                        print(f"  [本地清理失败] {rm_e}")
+
+                if local_audio_path and cloud_audio_url and os.path.exists(local_audio_path):
+                    try:
+                        os.remove(local_audio_path)
                     except OSError as rm_e:
                         print(f"  [本地清理失败] {rm_e}")
 

@@ -144,9 +144,115 @@ async def download_video_via_page(
     return None
 
 
+async def download_audio_via_page(
+    page,
+    item: dict,
+    out_dir: str,
+    *,
+    max_retries: int = 2,
+    min_valid_bytes: int = 1_000,
+    timeout_ms: int = 60_000,
+):
+    """
+    下载 item['music']['playUrl'] 指向的音频文件 (一般为 mp3)。
+    复用浏览器 context 的 cookie/UA;.part -> os.replace 原子改名。
+    成功返回保存路径,失败返回 None。
+    """
+    music = item.get("music") or {}
+    play_url = music.get("playUrl") or ""
+    music_id = str(music.get("id") or "")
+    if not play_url or not music_id:
+        return None
+
+    os.makedirs(out_dir, exist_ok=True)
+    save_path = os.path.join(out_dir, _safe_filename(f"{music_id}.mp3"))
+    part_path = save_path + ".part"
+
+    if os.path.exists(save_path) and os.path.getsize(save_path) >= min_valid_bytes:
+        print(f"[音频跳过] 已存在 {save_path}")
+        return save_path
+
+    if os.path.exists(part_path) and os.path.getsize(part_path) < min_valid_bytes:
+        try:
+            os.remove(part_path)
+        except OSError:
+            pass
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            resp = await page.request.get(
+                play_url,
+                headers={"Referer": "https://www.tiktok.com/", "Accept": "*/*"},
+                timeout=timeout_ms,
+            )
+            if not resp.ok:
+                print(f"[音频失败] music_id={music_id} 第{attempt}次 HTTP {resp.status}")
+                if 500 <= resp.status < 600 and attempt < max_retries:
+                    await asyncio.sleep(1.5 * attempt)
+                    continue
+                break
+
+            body = await resp.body()
+            ctype = (resp.headers.get("content-type") or "").lower()
+            if not body or len(body) < min_valid_bytes:
+                print(f"[音频失败] music_id={music_id} 第{attempt}次 size={len(body)} ct={ctype}")
+                break
+
+            with open(part_path, "wb") as f:
+                f.write(body)
+            os.replace(part_path, save_path)
+
+            size_kb = round(len(body) / 1024, 2)
+            print(f"[音频成功] music_id={music_id} ({size_kb} KB) -> {save_path}")
+            return save_path
+
+        except Exception as e:
+            print(f"[音频异常] music_id={music_id} 第{attempt}次: {e}")
+            if attempt < max_retries:
+                await asyncio.sleep(1.5 * attempt)
+                continue
+            break
+
+    if os.path.exists(part_path):
+        try:
+            os.remove(part_path)
+        except OSError:
+            pass
+    return None
+
+
 # ============================================================
 # 网络请求拦截 + 飞书写入
 # ============================================================
+
+def _print_music_info(item_list):
+    """
+    遍历 itemList,打印每条视频对应的音乐信息(item['music'])。
+    第一条 dump 完整 music 对象,便于排查可用字段;
+    后续条目只打要点摘要。
+    """
+    print("\n[音乐信息]")
+    for i, item in enumerate(item_list, 1):
+        video_id = item.get("id", "")
+        music = item.get("music") or {}
+        if not music:
+            print(f"  {i:>3}. video_id={video_id} (无 music 字段)")
+            continue
+
+        if i == 1:
+            print(f"  {i:>3}. video_id={video_id}  -- 完整 music dump --")
+            print(json.dumps(music, ensure_ascii=False, indent=4))
+        else:
+            print(
+                f"  {i:>3}. video_id={video_id} | "
+                f"music_id={music.get('id', '')} | "
+                f"title={music.get('title', '')} | "
+                f"author={music.get('authorName', '')} | "
+                f"original={music.get('original', '')} | "
+                f"duration={music.get('duration', '')} | "
+                f"playUrl={music.get('playUrl', '')}"
+            )
+
 
 async def _process_item_list(page, item_list, feishu_sheet, app_token, table_id,
                              existing_video_ids, out_dir, download_include_create_time):
@@ -196,6 +302,35 @@ async def _process_item_list(page, item_list, feishu_sheet, app_token, table_id,
             raw_cover, folder="tiktok/pics", public_id=video_id or None,
         ) if raw_cover else ''
 
+        music = item.get('music') or {}
+        music_id = music.get('id', '')
+        music_link = f"https://www.tiktok.com/music/-{music_id}" if music_id else ''
+        music_title = music.get('title', '') or ''
+
+        cloud_audio_url = ''
+        local_audio_path = None
+        try:
+            local_audio_path = await download_audio_via_page(page, item, out_dir)
+        except Exception as au_e:
+            print(f"[音频异常] music_id={music_id}: {au_e}")
+        if local_audio_path:
+            try:
+                cloud_audio_url = upload_file_to_cloudinary(
+                    local_audio_path,
+                    folder="tiktok/audio",
+                    public_id=str(music_id) or None,
+                    resource_type="video",
+                )
+                if not cloud_audio_url:
+                    print(f"[Cloudinary] music_id={music_id} 音频上传未返回 URL")
+            except Exception as up_e:
+                print(f"[Cloudinary 异常] music_id={music_id}: {up_e}")
+
+        music_info = json.dumps(
+            {"url": music_link, "title": music_title, "audio": cloud_audio_url},
+            ensure_ascii=False,
+        ) if (music_link or music_title or cloud_audio_url) else ''
+
         cloud_video_url = ''
         local_video_path = None
         try:
@@ -230,6 +365,7 @@ async def _process_item_list(page, item_list, feishu_sheet, app_token, table_id,
             "视频文件": cloud_video_url,
             "product_id": extra_json.get('id', ''),
             "product_title": extra_json.get('title', ''),
+            "music info": music_info,
         }
 
         result = feishu_sheet.create_record(app_token, table_id, fields, f"第 {i+1} 项")
@@ -242,6 +378,13 @@ async def _process_item_list(page, item_list, feishu_sheet, app_token, table_id,
                 print(f"[本地清理] 已删除 {local_video_path}")
             except OSError as rm_e:
                 print(f"[本地清理失败] {local_video_path}: {rm_e}")
+
+        if local_audio_path and cloud_audio_url and os.path.exists(local_audio_path):
+            try:
+                os.remove(local_audio_path)
+                print(f"[本地清理] 已删除 {local_audio_path}")
+            except OSError as rm_e:
+                print(f"[本地清理失败] {local_audio_path}: {rm_e}")
 
 
 async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table_id=None,
@@ -323,6 +466,7 @@ async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table
         first_item_list_done[0] = True
         item_list = json_body["itemList"]
         print("\n[解析 itemList] 找到 itemList 数组,包含 {} 项".format(len(item_list)))
+        _print_music_info(item_list)
         collected_items.extend(item_list)
 
     # 设置请求和响应监听器
