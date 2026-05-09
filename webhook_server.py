@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 
 from tiktok_account_monitor import update_titkok_video
 from tiktok_pid_to_product import main_process_empty_product_source_imgs
+from auto_upload_video import run as run_auto_upload_video
 from feishu_sheet import FeishuSheet
 
 # https://lauren-moodier-adjunctly.ngrok-free.dev
@@ -18,6 +19,7 @@ CALLBACK_URLS = _config.get("n8n_callback_urls", {})
 
 _monitor_lock = asyncio.Lock()
 _product_lock = asyncio.Lock()
+_auto_upload_lock = asyncio.Lock()
 
 
 async def _run_and_callback(job: str, lock: asyncio.Lock, coro_or_func):
@@ -51,6 +53,14 @@ async def run_product(background_tasks: BackgroundTasks):
         raise HTTPException(status_code=409, detail="product already running")
     background_tasks.add_task(_run_and_callback, "product", _product_lock, main_process_empty_product_source_imgs)
     return {"status": "started", "job": "product"}
+
+
+@app.post("/run/auto-upload", status_code=202)
+async def run_auto_upload(background_tasks: BackgroundTasks):
+    if _auto_upload_lock.locked():
+        raise HTTPException(status_code=409, detail="auto-upload already running")
+    background_tasks.add_task(_run_and_callback, "auto_upload", _auto_upload_lock, run_auto_upload_video)
+    return {"status": "started", "job": "auto_upload"}
 
 
 

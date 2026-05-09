@@ -1,14 +1,25 @@
 {
-  "name": "TikTok Scraper Pipeline",
+  "name": "TikTok Monitor System",
   "nodes": [
     {
       "parameters": {
-        "rule": { "interval": [{ "field": "hours", "hoursInterval": 1 }] }
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "triggerAtMinute": 40
+            }
+          ]
+        }
       },
       "name": "Every Hour",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [0, 0]
+      "position": [
+        0,
+        0
+      ],
+      "id": "058751ab-e2e4-479e-91d3-748e4028bea7"
     },
     {
       "parameters": {
@@ -19,20 +30,27 @@
       "name": "Start Monitor",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [220, 0]
+      "position": [
+        224,
+        0
+      ],
+      "id": "1c894914-cc6c-4681-a9e5-c026c5b6ca5e"
     },
     {
       "parameters": {
         "httpMethod": "POST",
         "path": "monitor-done",
-        "responseMode": "onReceived",
         "options": {}
       },
       "name": "Wait Monitor Done",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [440, 0],
-      "webhookId": "monitor-done"
+      "position": [
+        240,
+        -208
+      ],
+      "webhookId": "monitor-done",
+      "id": "7a585e21-317a-4336-86ac-2ca51da0a5e3"
     },
     {
       "parameters": {
@@ -40,29 +58,110 @@
         "url": "https://lauren-moodier-adjunctly.ngrok-free.dev/run/product",
         "options": {}
       },
-      "name": "Start Product",
+      "name": "Start Product Handle",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [660, 0]
+      "position": [
+        864,
+        -208
+      ],
+      "id": "f3234c85-bd64-4076-98fc-a2a6492be50c"
     },
     {
       "parameters": {
         "httpMethod": "POST",
         "path": "product-done",
-        "responseMode": "onReceived",
         "options": {}
       },
-      "name": "Wait Product Done",
+      "name": "Wait Product Handle Done",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [880, 0],
-      "webhookId": "product-done"
+      "position": [
+        1152,
+        -208
+      ],
+      "webhookId": "product-done",
+      "id": "673b6e78-7112-4858-aa65-f94708e48372"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://lauren-moodier-adjunctly.ngrok-free.dev/run/auto-upload",
+        "options": {}
+      },
+      "name": "Start Auto Upload",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1408,
+        -208
+      ],
+      "id": "a1b2c3d4-e5f6-4789-89ab-cdef01234567"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "auto-upload-done",
+        "options": {}
+      },
+      "name": "Wait Auto Upload Done",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        1696,
+        -208
+      ],
+      "webhookId": "auto-upload-done",
+      "id": "b2c3d4e5-f6a7-4890-9abc-def012345678"
     }
   ],
+  "pinData": {},
   "connections": {
-    "Every Hour": { "main": [[{ "node": "Start Monitor", "type": "main", "index": 0 }]] },
-    "Start Monitor": { "main": [[{ "node": "Wait Monitor Done", "type": "main", "index": 0 }]] },
-    "Wait Monitor Done": { "main": [[{ "node": "Start Product", "type": "main", "index": 0 }]] },
-    "Start Product": { "main": [[{ "node": "Wait Product Done", "type": "main", "index": 0 }]] }
-  }
+    "Every Hour": {
+      "main": [
+        [
+          {
+            "node": "Start Monitor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Monitor Done": {
+      "main": [
+        [
+          {
+            "node": "Start Product Handle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Product Handle Done": {
+      "main": [
+        [
+          {
+            "node": "Start Auto Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "7a3083f6-f1a3-42a2-8fb9-8a39fc789966",
+  "meta": {
+    "instanceId": "90d7da3e960ae7529794008f0604204e3c6e360be3b1829d7f3bab369c6e32ee"
+  },
+  "id": "yBZWjfuL9bmudlUK",
+  "tags": []
 }
