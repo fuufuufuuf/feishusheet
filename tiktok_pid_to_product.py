@@ -321,7 +321,7 @@ class TikTokProductScraperPlaywright:
         """
         # 调用并发版本
         return self.scrape_products_concurrent(product_ids, feishu_sheet, app_token, table_id, download_images, images_folder)
-    
+
     def scrape_products_concurrent(self, product_ids, feishu_sheet=None, app_token=None, table_id=None, download_images=False, images_folder=None):
         """
         并发批量抓取产品图片并更新多维表格
@@ -440,13 +440,13 @@ class TikTokProductScraperPlaywright:
                         "product_desc": product_description,
                         "product_source_imgs": image_urls_str
                     }
-                    
+
                     update_result = feishu_sheet.update_record(app_token, table_id, record_id, update_fields)
                     if update_result:
                         print(f"  多维表格更新成功")
                     else:
                         print(f"  警告：多维表格更新失败")
-                
+
                 # 下载图片（如果需要）
                 if download_images and image_urls:
                     scraper.download_images(image_urls, product_id, images_folder, product_title=product_title, product_description=product_description)
@@ -1014,18 +1014,18 @@ def get_empty_product_source_imgs_records(config_path='config.json'):
     
     # 提取product_id和record_id
     empty_product_source_imgs_records = []
-    
+
     for record in records:
         record_id = record.get('record_id') or record.get('id')
         fields = record.get('fields', {})
-        
+
         # 提取product_id
         product_id = fields.get('product_id')
-        
+
         # 处理product_id格式，确保获取纯数字字符串
         if isinstance(product_id, list) and len(product_id) > 0 and isinstance(product_id[0], dict):
             product_id = product_id[0].get('text', '')
-        
+
         # 确保product_id和record_id存在
         if product_id and record_id:
             empty_product_source_imgs_records.append({
@@ -1151,7 +1151,7 @@ def main_process_empty_product_source_imgs():
     # 5. 调用scrape_products方法处理记录
     print("\n=== 开始处理记录 ===")
     print(f"共处理 {len(empty_records)} 条记录")
-    
+
     try:
         results = scraper.scrape_products(
             product_ids=empty_records,
