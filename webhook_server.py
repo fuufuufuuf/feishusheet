@@ -95,13 +95,69 @@ def run_update_record(record_id: str, fields: dict):
 
 
 @app.get("/run/pending-upload")
-def run_pending_upload(handle: str):
+def run_pending_upload(handle: str = None):
+    """
+    查询已生成视频但未上传的记录。
+      - 传入 handle：仅查询该 handle 的记录
+      - 不传 handle：从 bitable_r（table_id 以 Vmn 结尾）读取所有监控账号 handle，
+                     聚合返回每个 handle 对应的 pending 记录
+    """
     feishu_cfg = _config["feishu"]
     bitable_cfg = _config["bitable"]
     sheet = FeishuSheet(feishu_cfg["app_id"], feishu_cfg["app_secret"])
-    items = sheet.get_pending_upload_records(
-        bitable_cfg["app_token"],
-        bitable_cfg["table_id"],
-        handle,
-    )
-    return {"status": "success", "count": len(items), "items": items}
+
+    if handle:
+        items = sheet.get_pending_upload_records(
+            bitable_cfg["app_token"],
+            bitable_cfg["table_id"],
+            handle,
+        )
+        return {"status": "success", "count": len(items), "items": items}
+
+    # 无 handle 参数：从 bitable_r 取全部账号 handle，再依次查询
+    feishu_r_cfg = _config.get("feishu_r", {}) or {}
+    bitable_r_cfg = _config.get("bitable_r", {}) or {}
+    r_app_id = feishu_r_cfg.get("app_id")
+    r_app_secret = feishu_r_cfg.get("app_secret")
+    r_app_token = bitable_r_cfg.get("app_token")
+    r_table_id = bitable_r_cfg.get("table_id")
+
+    if not all([r_app_id, r_app_secret, r_app_token, r_table_id]):
+        raise HTTPException(status_code=500, detail="feishu_r / bitable_r config missing")
+
+    r_sheet = FeishuSheet(r_app_id, r_app_secret)
+    r_result = r_sheet.get_sheet_data(r_app_token, r_table_id, get_all=True)
+    if not r_result:
+        raise HTTPException(status_code=500, detail="failed to read bitable_r")
+
+    handles = []
+    seen = set()
+    for record in r_result.get("data", {}).get("items", []) or []:
+        fields = record.get("fields", {}) or {}
+        val = fields.get("handle")
+        if isinstance(val, list) and val and isinstance(val[0], dict):
+            val = val[0].get("text", "")
+        if not isinstance(val, str):
+            val = str(val) if val else ""
+        val = val.strip()
+        if val and val not in seen:
+            seen.add(val)
+            handles.append(val)
+
+    results = []
+    total = 0
+    for h in handles:
+        items = sheet.get_pending_upload_records(
+            bitable_cfg["app_token"],
+            bitable_cfg["table_id"],
+            h,
+        )
+        results.append({"handle": h, "count": len(items), "items": items})
+        total += len(items)
+
+    return {
+        "status": "success",
+        "handle_count": len(handles),
+        "total": total,
+        "results": results,
+    }
