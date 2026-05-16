@@ -110,22 +110,32 @@ def _build_handle_maps(config):
 def _fetch_pending_records(feishu_sheet, app_token, table_id):
     """
     主表中需要做 auto_upload 处理的记录：
-      product_source_imgs 不为空（说明产品信息已更新）
-      且 是否生成视频 为空（还没排过上传计划）
+      (product_source_imgs 不为空  或  ai_video_urls 不为空)
+      且 是否生成视频 为空
+    飞书的过滤器无法可靠表达嵌套 OR/AND，这里分两次查询再按 record_id 去重。
     """
-    filter_formula = {
-        "conjunction": "and",
-        "conditions": [
-            {"field_name": "product_source_imgs", "operator": "isNotEmpty", "value": []},
-            {"field_name": "是否生成视频", "operator": "isEmpty", "value": []},
-        ],
-    }
-    result = feishu_sheet.get_records_by_filter(
-        app_token, table_id, filter_formula, get_all=True
-    )
-    if not result:
-        return []
-    return result.get("data", {}).get("items", []) or []
+    merged = {}
+    for source_field in ("product_source_imgs", "ai_video_urls"):
+        filter_formula = {
+            "conjunction": "and",
+            "conditions": [
+                {"field_name": source_field, "operator": "isNotEmpty", "value": []},
+                {"field_name": "是否生成视频", "operator": "isEmpty", "value": []},
+            ],
+        }
+        result = feishu_sheet.get_records_by_filter(
+            app_token, table_id, filter_formula, get_all=True
+        )
+        if not result:
+            print(f"[auto_upload] 查询 {source_field} 非空记录失败")
+            continue
+        items = result.get("data", {}).get("items", []) or []
+        for rec in items:
+            rid = rec.get("record_id") or rec.get("id")
+            if rid and rid not in merged:
+                merged[rid] = rec
+        print(f"[auto_upload] 命中 {source_field} 非空 {len(items)} 条，累计去重 {len(merged)} 条")
+    return list(merged.values())
 
 
 def _build_update_fields(handle, post_account_map, device_map):

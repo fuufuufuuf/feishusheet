@@ -1012,8 +1012,37 @@ def get_empty_product_source_imgs_records(config_path='config.json'):
     if records is None:
         records = []
     
+    # 4.5 读取 bitable_r 中的养号集合，准备跳过这些 handle 的记录
+    nurturing_handles = set()
+    try:
+        feishu_r_cfg = config.get('feishu_r', {}) or {}
+        bitable_r_cfg = config.get('bitable_r', {}) or {}
+        r_app_id = feishu_r_cfg.get('app_id')
+        r_app_secret = feishu_r_cfg.get('app_secret')
+        r_app_token = bitable_r_cfg.get('app_token')
+        r_table_id = bitable_r_cfg.get('table_id')
+        if all([r_app_id, r_app_secret, r_app_token, r_table_id]):
+            feishu_r = FeishuSheet(r_app_id, r_app_secret)
+            r_result = feishu_r.get_sheet_data(r_app_token, r_table_id, get_all=True)
+            for rec in (r_result or {}).get('data', {}).get('items', []) or []:
+                rf = rec.get('fields', {}) or {}
+                h = rf.get('handle')
+                if isinstance(h, list) and h and isinstance(h[0], dict):
+                    h = h[0].get('text', '')
+                h = str(h or '').strip()
+                nurturing_raw = rf.get('养号')
+                if isinstance(nurturing_raw, list) and nurturing_raw:
+                    first = nurturing_raw[0]
+                    nurturing_raw = first.get('text', '') if isinstance(first, dict) else str(first)
+                if h and str(nurturing_raw or '').strip() == '是':
+                    nurturing_handles.add(h)
+            print(f"从 bitable_r 读取到 {len(nurturing_handles)} 个养号 handle，将跳过这些记录的产品抓取")
+    except Exception as e:
+        print(f"读取养号集合失败（继续处理全部记录）: {e}")
+
     # 提取product_id和record_id
     empty_product_source_imgs_records = []
+    skipped_nurturing = 0
 
     for record in records:
         record_id = record.get('record_id') or record.get('id')
@@ -1026,15 +1055,28 @@ def get_empty_product_source_imgs_records(config_path='config.json'):
         if isinstance(product_id, list) and len(product_id) > 0 and isinstance(product_id[0], dict):
             product_id = product_id[0].get('text', '')
 
+        # 提取 handle，用于过滤掉养号账号
+        handle = fields.get('handle')
+        if isinstance(handle, list) and handle and isinstance(handle[0], dict):
+            handle = handle[0].get('text', '')
+        handle = str(handle or '').strip()
+
+        if handle and handle in nurturing_handles:
+            skipped_nurturing += 1
+            continue
+
         # 确保product_id和record_id存在
         if product_id and record_id:
             empty_product_source_imgs_records.append({
                 'product_id': product_id,
                 'record_id': record_id
             })
-    
-    print(f"找到 {len(empty_product_source_imgs_records)} 条product_source_imgs为None的记录")
-    
+
+    print(
+        f"找到 {len(empty_product_source_imgs_records)} 条product_source_imgs为None的记录"
+        f"（已跳过 {skipped_nurturing} 条养号账号）"
+    )
+
     return empty_product_source_imgs_records
 
 

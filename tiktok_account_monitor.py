@@ -255,39 +255,43 @@ def _print_music_info(item_list):
 
 
 async def _process_item_list(page, item_list, feishu_sheet, app_token, table_id,
-                             existing_video_ids, out_dir, download_include_create_time):
+                             existing_video_ids, out_dir, download_include_create_time,
+                             is_nurturing: bool = False):
     """
     顺序处理 itemList:上传封面 -> 下载视频 -> 上传视频 -> 写飞书。
     独立出来是为了让处理过程在 browser context 仍然存活时同步完成,
     避免在 Playwright response 回调里以 fire-and-forget 方式做重活。
     """
     for i, item in enumerate(item_list):
+        # 解析商品锚点。养号账号的视频通常没有商品锚点，此处允许 extra_json 为空
+        extra_json = {}
         anchors = item.get("anchors")
-        if not (isinstance(anchors, list) and anchors):
-            continue
-        first_anchor = anchors[0]
-        extra_str = first_anchor.get("extra")
-        if not isinstance(extra_str, str):
-            continue
+        if isinstance(anchors, list) and anchors:
+            first_anchor = anchors[0]
+            extra_str = first_anchor.get("extra")
+            if isinstance(extra_str, str):
+                try:
+                    arr = json.loads(extra_str)
+                    candidate = arr[0] if isinstance(arr, list) and arr else {}
+                except (json.JSONDecodeError, IndexError, KeyError) as e:
+                    print(f"解析失败: {str(e)}")
+                    candidate = {}
+                if isinstance(candidate, dict) and 'extra' in candidate:
+                    for field in ('icon', 'actions', 'component_key', 'anchor_strong'):
+                        candidate.pop(field, None)
+                    try:
+                        inner_extra = json.loads(candidate['extra'])
+                        if 'product_id' in inner_extra:
+                            candidate['product_id'] = inner_extra['product_id']
+                        if 'title' in inner_extra:
+                            candidate['title'] = inner_extra['title']
+                    except json.JSONDecodeError as inner_e:
+                        print(f"解析 inner extra 失败: {str(inner_e)}")
+                    extra_json = candidate
 
-        try:
-            extra_json = json.loads(extra_str)[0]
-        except (json.JSONDecodeError, IndexError, KeyError) as e:
-            print(f"解析失败: {str(e)}")
+        # 非养号模式下，必须存在商品锚点才写入飞书
+        if not is_nurturing and not extra_json:
             continue
-
-        if 'extra' not in extra_json:
-            continue
-        for field in ('icon', 'actions', 'component_key', 'anchor_strong'):
-            extra_json.pop(field, None)
-        try:
-            inner_extra = json.loads(extra_json['extra'])
-            if 'product_id' in inner_extra:
-                extra_json['product_id'] = inner_extra['product_id']
-            if 'title' in inner_extra:
-                extra_json['title'] = inner_extra['title']
-        except json.JSONDecodeError as inner_e:
-            print(f"解析 inner extra 失败: {str(inner_e)}")
 
         if not (feishu_sheet and app_token and table_id):
             continue
@@ -309,22 +313,26 @@ async def _process_item_list(page, item_list, feishu_sheet, app_token, table_id,
 
         cloud_audio_url = ''
         local_audio_path = None
-        try:
-            local_audio_path = await download_audio_via_page(page, item, out_dir)
-        except Exception as au_e:
-            print(f"[音频异常] music_id={music_id}: {au_e}")
-        if local_audio_path:
+        if is_nurturing:
+            # 养号模式：跳过音频下载和 Cloudinary 上传，audio 直接留空
+            print(f"[养号] music_id={music_id} 跳过音频下载/上传")
+        else:
             try:
-                cloud_audio_url = upload_file_to_cloudinary(
-                    local_audio_path,
-                    folder="tiktok/audio",
-                    public_id=str(music_id) or None,
-                    resource_type="video",
-                )
-                if not cloud_audio_url:
-                    print(f"[Cloudinary] music_id={music_id} 音频上传未返回 URL")
-            except Exception as up_e:
-                print(f"[Cloudinary 异常] music_id={music_id}: {up_e}")
+                local_audio_path = await download_audio_via_page(page, item, out_dir)
+            except Exception as au_e:
+                print(f"[音频异常] music_id={music_id}: {au_e}")
+            if local_audio_path:
+                try:
+                    cloud_audio_url = upload_file_to_cloudinary(
+                        local_audio_path,
+                        folder="tiktok/audio",
+                        public_id=str(music_id) or None,
+                        resource_type="video",
+                    )
+                    if not cloud_audio_url:
+                        print(f"[Cloudinary] music_id={music_id} 音频上传未返回 URL")
+                except Exception as up_e:
+                    print(f"[Cloudinary 异常] music_id={music_id}: {up_e}")
 
         music_info = json.dumps(
             {"url": music_link, "title": music_title, "audio": cloud_audio_url},
@@ -333,28 +341,37 @@ async def _process_item_list(page, item_list, feishu_sheet, app_token, table_id,
 
         cloud_video_url = ''
         local_video_path = None
-        try:
-            local_video_path = await download_video_via_page(
-                page, item, out_dir,
-                include_create_time=download_include_create_time,
-            )
-        except Exception as dl_e:
-            print(f"[下载异常] video_id={video_id}: {dl_e}")
-
-        if local_video_path:
-            try:
-                cloud_video_url = upload_file_to_cloudinary(
-                    local_video_path,
-                    folder="tiktok/videos",
-                    public_id=video_id or None,
-                    resource_type="video",
-                )
-                if not cloud_video_url:
-                    print(f"[Cloudinary] video_id={video_id} 上传未返回 URL")
-            except Exception as up_e:
-                print(f"[Cloudinary 异常] video_id={video_id}: {up_e}")
+        if is_nurturing:
+            # 养号模式：视频文件直接用 TikTok 视频页 URL，跳过下载与 Cloudinary 上传
+            handle_for_url = (item.get('author') or {}).get('uniqueId') or ''
+            if handle_for_url and video_id:
+                cloud_video_url = f"https://www.tiktok.com/@{handle_for_url}/video/{video_id}"
+                print(f"[养号] video_id={video_id} 使用原始 URL {cloud_video_url}")
+            else:
+                print(f"[养号] video_id={video_id} 缺少 handle/video_id，无法生成原始 URL")
         else:
-            print(f"[跳过上传] video_id={video_id} 本地文件不存在")
+            try:
+                local_video_path = await download_video_via_page(
+                    page, item, out_dir,
+                    include_create_time=download_include_create_time,
+                )
+            except Exception as dl_e:
+                print(f"[下载异常] video_id={video_id}: {dl_e}")
+
+            if local_video_path:
+                try:
+                    cloud_video_url = upload_file_to_cloudinary(
+                        local_video_path,
+                        folder="tiktok/videos",
+                        public_id=video_id or None,
+                        resource_type="video",
+                    )
+                    if not cloud_video_url:
+                        print(f"[Cloudinary] video_id={video_id} 上传未返回 URL")
+                except Exception as up_e:
+                    print(f"[Cloudinary 异常] video_id={video_id}: {up_e}")
+            else:
+                print(f"[跳过上传] video_id={video_id} 本地文件不存在")
 
         fields = {
             "handle": item.get('author', '').get('uniqueId', ''),
@@ -390,7 +407,8 @@ async def _process_item_list(page, item_list, feishu_sheet, app_token, table_id,
 async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table_id=None,
                              existing_video_ids=None,
                              out_dir: str = "downloads",
-                             download_include_create_time: bool = True):
+                             download_include_create_time: bool = True,
+                             is_nurturing: bool = False):
     """
     拦截并分析网络请求
     """
@@ -492,6 +510,7 @@ async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table
                 feishu_sheet, app_token, table_id,
                 existing_video_ids, out_dir,
                 download_include_create_time,
+                is_nurturing=is_nurturing,
             )
     finally:
         # 防止同一个 page 多次注册监听器导致累积
@@ -579,9 +598,10 @@ async def update_titkok_video():
 
     # 从飞书表格读取handle数据
     handles = []
+    handle_nurturing = {}  # handle -> bool，True 表示养号模式
     try:
         print("\n=== 从飞书表格读取handle数据 ===")
-        sheet_data = feishu_sheet_r.get_sheet_data(app_token_r, table_id_r)
+        sheet_data = feishu_sheet_r.get_sheet_data(app_token_r, table_id_r, get_all=True)
         if sheet_data:
             records = sheet_data.get('data', {}).get('items', [])
             print(f"从表格中读取到 {len(records)} 条记录")
@@ -595,9 +615,18 @@ async def update_titkok_video():
                         break
                 if not handle:
                     handle = fields.get('handle')
+
+                # 解析养号字段（单选）
+                nurturing_raw = fields.get('养号')
+                if isinstance(nurturing_raw, list) and nurturing_raw:
+                    first = nurturing_raw[0]
+                    nurturing_raw = first.get('text', '') if isinstance(first, dict) else str(first)
+                is_nurturing = str(nurturing_raw or '').strip() == '是'
+
                 if handle:
                     handles.append(handle)
-                    print(f"获取到handle: {handle}")
+                    handle_nurturing[handle] = is_nurturing
+                    print(f"获取到handle: {handle}  养号={'是' if is_nurturing else '否'}")
 
             print(f"成功提取 {len(handles)} 个handle")
         else:
@@ -717,12 +746,17 @@ async def update_titkok_video():
                                     existing_video_ids.add(str(vid))
                             print(f"已有 {len(existing_video_ids)} 个 video_id")
 
+                    is_nurturing = handle_nurturing.get(handle, False)
+                    if is_nurturing:
+                        print(f"  handle={handle} 处于养号模式，视频文件将使用 TikTok 原始页面 URL，跳过下载/Cloudinary 上传")
+
                     await intercept_requests(
                         page, url,
                         feishu_sheet, app_token, table_id,
                         existing_video_ids,
                         out_dir=out_dir,
                         download_include_create_time=download_include_create_time,
+                        is_nurturing=is_nurturing,
                     )
                     print(f"URL {url} 处理成功")
                 except Exception as e:
