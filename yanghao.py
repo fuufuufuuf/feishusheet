@@ -11,20 +11,40 @@ yanghao.py
 """
 
 import json
+import os
+import re
 import secrets
+import tempfile
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
 
+from cloudinary_helper import upload_file_to_cloudinary
 from feishu_sheet import FeishuSheet
 
 CONFIG_PATH = "config.json"
 
-POLL_INTERVAL = 10      # 秒
-POLL_TIMEOUT = 60 * 30  # 30 分钟硬超时
+POLL_INTERVAL = 10                    # 秒
+POLL_TIMEOUT = 60 * 30                # 30 分钟硬超时
 NA = "N/A"
 DEFAULT_MAX_CONCURRENT = 3
+DEFAULT_SUBMIT_INTERVAL = 2.0         # config 缺失时的兜底值
+
+_submit_gate = threading.Lock()
+_last_submit_ts = 0.0
+
+
+def _wait_for_submit_slot(interval: float):
+    """进程级节流：保证两次进入 submit 之间至少间隔 interval 秒。"""
+    global _last_submit_ts
+    with _submit_gate:
+        now = time.time()
+        wait = interval - (now - _last_submit_ts)
+        if wait > 0:
+            time.sleep(wait)
+        _last_submit_ts = time.time()
 
 
 def _load_yanghao_config(config_path=CONFIG_PATH):
@@ -34,11 +54,12 @@ def _load_yanghao_config(config_path=CONFIG_PATH):
     base_url = y.get("base_url")
     username = y.get("username")
     password = y.get("password")
+    submit_interval = float(y.get("submit_interval", DEFAULT_SUBMIT_INTERVAL))
     if not all([base_url, username, password]):
         raise RuntimeError(
             "config.json 中 yanghao.base_url / username / password 不完整"
         )
-    return base_url, username, password
+    return base_url, username, password, submit_interval
 
 
 def generate_video_from_tiktok(tiktok_url: str, verbose: bool = True,
@@ -56,7 +77,7 @@ def generate_video_from_tiktok(tiktok_url: str, verbose: bool = True,
             print(msg)
 
     try:
-        base_url, username, password = _load_yanghao_config(config_path)
+        base_url, username, password, submit_interval = _load_yanghao_config(config_path)
     except Exception as e:
         _log(f"[配置加载失败] {e}")
         return NA
@@ -93,7 +114,8 @@ def generate_video_from_tiktok(tiktok_url: str, verbose: bool = True,
         return NA
     _log(f"set_link_mode: {set_link_data}")
 
-    # 提交任务
+    # 提交任务（节流：保证全局两次 submit 至少间隔 submit_interval 秒）
+    _wait_for_submit_slot(submit_interval)
     submit_resp = session.post(
         f"{base_url}/api/submit",
         json={
@@ -155,9 +177,69 @@ def generate_video_from_tiktok(tiktok_url: str, verbose: bool = True,
 
         time.sleep(POLL_INTERVAL)
 
-    if final_status == "completed":
-        return f"{base_url}/api/task/{task_id}/download"
-    return NA
+    if final_status != "completed":
+        return NA
+
+    # 任务完成：用同一个登录态 session 把 mp4 拉下来，再上传 Cloudinary，
+    # 返回公开 URL 以供下游（n8n / 上传设备）免登录访问
+    download_url = f"{base_url}/api/task/{task_id}/download"
+    _log(f"开始下载 {download_url}")
+
+    local_path = None
+    try:
+        with session.get(download_url, stream=True, timeout=300) as r:
+            if r.status_code != 200:
+                _log(f"[下载失败] status={r.status_code}")
+                return NA
+            # 从 Content-Disposition 或 task_id 推断扩展名
+            ext = ".mp4"
+            cd = r.headers.get("content-disposition") or ""
+            m = re.search(r'filename\*?=(?:UTF-8\'\')?"?([^";]+)"?', cd)
+            if m:
+                fname = m.group(1)
+                if "." in fname:
+                    ext = "." + fname.rsplit(".", 1)[-1]
+            fd, local_path = tempfile.mkstemp(prefix=f"{task_id}_", suffix=ext)
+            try:
+                with os.fdopen(fd, "wb") as out:
+                    for chunk in r.iter_content(chunk_size=1024 * 1024):
+                        if chunk:
+                            out.write(chunk)
+            except Exception:
+                # mkstemp 已经把 fd 给我们了，下面 finally 会清掉 local_path
+                raise
+            size_mb = round(os.path.getsize(local_path) / 1024 / 1024, 2)
+            _log(f"下载完成 {size_mb} MB -> {local_path}")
+    except Exception as e:
+        _log(f"[下载异常] {e}")
+        if local_path and os.path.exists(local_path):
+            try:
+                os.remove(local_path)
+            except OSError:
+                pass
+        return NA
+
+    try:
+        cloud_url = upload_file_to_cloudinary(
+            local_path,
+            folder="tiktok/yanghao",
+            public_id=task_id,
+            resource_type="video",
+        )
+    except Exception as e:
+        _log(f"[Cloudinary 异常] {e}")
+        cloud_url = ""
+    finally:
+        try:
+            os.remove(local_path)
+        except OSError:
+            pass
+
+    if not cloud_url:
+        _log("[Cloudinary] 上传未返回 URL")
+        return NA
+    _log(f"Cloudinary URL = {cloud_url}")
+    return cloud_url
 
 
 def _unwrap_feishu_text(val):
