@@ -104,6 +104,33 @@ def run_update_record(record_id: str, fields: dict):
     return {"status": "success", "data": result}
 
 
+@app.get("/run/bitable-r")
+def run_bitable_r():
+    """
+    读取 bitable_r（tblhEdUtW6C69Vmn）全表数据并返回。
+    """
+    feishu_r_cfg = _config.get("feishu_r", {}) or {}
+    bitable_r_cfg = _config.get("bitable_r", {}) or {}
+    app_id = feishu_r_cfg.get("app_id")
+    app_secret = feishu_r_cfg.get("app_secret")
+    app_token = bitable_r_cfg.get("app_token")
+    table_id = bitable_r_cfg.get("table_id")
+
+    if not all([app_id, app_secret, app_token, table_id]):
+        raise HTTPException(status_code=500, detail="feishu_r / bitable_r config missing")
+
+    sheet = FeishuSheet(app_id, app_secret)
+    result = sheet.get_sheet_data(app_token, table_id, get_all=True)
+    if not result:
+        raise HTTPException(status_code=500, detail="failed to read bitable_r")
+
+    return {
+        "status": "success",
+        "total": result.get("data", {}).get("total", 0),
+        "items": result.get("data", {}).get("items", []),
+    }
+
+
 @app.get("/run/pending-upload")
 def run_pending_upload(handle: str = None):
     """
