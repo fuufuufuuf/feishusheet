@@ -63,7 +63,7 @@
       "typeVersion": 4.2,
       "position": [
         608,
-        -288
+        -208
       ],
       "id": "f3234c85-bd64-4076-98fc-a2a6492be50c"
     },
@@ -77,8 +77,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        896,
-        -288
+        864,
+        -208
       ],
       "webhookId": "product-done",
       "id": "673b6e78-7112-4858-aa65-f94708e48372"
@@ -93,8 +93,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        608,
-        -128
+        1120,
+        -208
       ],
       "id": "c3d4e5f6-a7b8-4901-abcd-ef0123456789"
     },
@@ -108,24 +108,11 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        896,
-        -128
+        1376,
+        -208
       ],
       "webhookId": "yanghao-done",
       "id": "d4e5f6a7-b8c9-4012-bcde-f01234567890"
-    },
-    {
-      "parameters": {
-        "mode": "combineAll"
-      },
-      "name": "Merge",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 2.1,
-      "position": [
-        1184,
-        -208
-      ],
-      "id": "e5f6a7b8-c9d0-4123-cdef-012345678901"
     },
     {
       "parameters": {
@@ -137,7 +124,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1408,
+        1632,
         -208
       ],
       "id": "a1b2c3d4-e5f6-4789-89ab-cdef01234567"
@@ -152,7 +139,7 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        1696,
+        1888,
         -208
       ],
       "webhookId": "auto-upload-done",
@@ -179,11 +166,6 @@
             "node": "Start Product Handle",
             "type": "main",
             "index": 0
-          },
-          {
-            "node": "Start Yanghao",
-            "type": "main",
-            "index": 0
           }
         ]
       ]
@@ -192,7 +174,7 @@
       "main": [
         [
           {
-            "node": "Merge",
+            "node": "Start Yanghao",
             "type": "main",
             "index": 0
           }
@@ -200,17 +182,6 @@
       ]
     },
     "Wait Yanghao Done": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Merge": {
       "main": [
         [
           {
