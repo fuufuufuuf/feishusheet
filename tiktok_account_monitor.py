@@ -225,35 +225,6 @@ async def download_audio_via_page(
 # 网络请求拦截 + 飞书写入
 # ============================================================
 
-def _print_music_info(item_list):
-    """
-    遍历 itemList,打印每条视频对应的音乐信息(item['music'])。
-    第一条 dump 完整 music 对象,便于排查可用字段;
-    后续条目只打要点摘要。
-    """
-    print("\n[音乐信息]")
-    for i, item in enumerate(item_list, 1):
-        video_id = item.get("id", "")
-        music = item.get("music") or {}
-        if not music:
-            print(f"  {i:>3}. video_id={video_id} (无 music 字段)")
-            continue
-
-        if i == 1:
-            print(f"  {i:>3}. video_id={video_id}  -- 完整 music dump --")
-            print(json.dumps(music, ensure_ascii=False, indent=4))
-        else:
-            print(
-                f"  {i:>3}. video_id={video_id} | "
-                f"music_id={music.get('id', '')} | "
-                f"title={music.get('title', '')} | "
-                f"author={music.get('authorName', '')} | "
-                f"original={music.get('original', '')} | "
-                f"duration={music.get('duration', '')} | "
-                f"playUrl={music.get('playUrl', '')}"
-            )
-
-
 async def _process_item_list(page, item_list, feishu_sheet, app_token, table_id,
                              existing_video_ids, out_dir, download_include_create_time,
                              is_nurturing: bool = False):
@@ -484,7 +455,6 @@ async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table
         first_item_list_done[0] = True
         item_list = json_body["itemList"]
         print("\n[解析 itemList] 找到 itemList 数组,包含 {} 项".format(len(item_list)))
-        _print_music_info(item_list)
         collected_items.extend(item_list)
 
     # 设置请求和响应监听器

@@ -193,7 +193,7 @@ async def backfill_empty_videos():
                 print(
                     f"\n[{i}/{len(records)}] record_id={record_id} "
                     f"handle={handle} video_id={video_id} "
-                    f"need_video={need_video} need_music={need_music}"
+                    f"need_video={need_video}"
                 )
 
                 if not handle or not video_id:
@@ -274,8 +274,6 @@ async def backfill_empty_videos():
                             {"url": music_url, "title": music_title, "audio": cloud_audio_url},
                             ensure_ascii=False,
                         )
-                    else:
-                        print("  itemStruct 中无 music.id/title/playUrl,跳过 music info 回填")
 
                 if not update_payload:
                     print("  本条没有可更新字段")
