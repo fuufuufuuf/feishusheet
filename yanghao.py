@@ -25,12 +25,34 @@ from cloudinary_helper import upload_file_to_cloudinary
 from feishu_sheet import FeishuSheet
 
 CONFIG_PATH = "config.json"
+STYLE_FILE = "yanghao_style.json"
 
 POLL_INTERVAL = 10                    # 秒
 POLL_TIMEOUT = 60 * 30                # 30 分钟硬超时
 NA = "N/A"
 DEFAULT_MAX_CONCURRENT = 3
 DEFAULT_SUBMIT_INTERVAL = 2.0         # config 缺失时的兜底值
+
+
+def _load_preset_style(preset_name: str, style_file: str = STYLE_FILE):
+    """从 yanghao_sytle.json 读取指定 preset；找不到/出错返回空 dict。"""
+    if not preset_name:
+        return {}
+    try:
+        with open(style_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        presets = (data or {}).get("presets", {}) or {}
+        preset = presets.get(preset_name)
+        if not isinstance(preset, dict):
+            print(f"[yanghao] 在 {style_file} 中未找到 preset '{preset_name}'")
+            return {}
+        return preset
+    except FileNotFoundError:
+        print(f"[yanghao] 缺少 {style_file}")
+        return {}
+    except Exception as e:
+        print(f"[yanghao] 读取 {style_file} 失败: {e}")
+        return {}
 
 _submit_gate = threading.Lock()
 _last_submit_ts = 0.0
@@ -55,11 +77,12 @@ def _load_yanghao_config(config_path=CONFIG_PATH):
     username = y.get("username")
     password = y.get("password")
     submit_interval = float(y.get("submit_interval", DEFAULT_SUBMIT_INTERVAL))
+    preset_style = (y.get("preset_style") or "").strip()
     if not all([base_url, username, password]):
         raise RuntimeError(
             "config.json 中 yanghao.base_url / username / password 不完整"
         )
-    return base_url, username, password, submit_interval
+    return base_url, username, password, submit_interval, preset_style
 
 
 def generate_video_from_tiktok(tiktok_url: str, verbose: bool = True,
@@ -77,10 +100,15 @@ def generate_video_from_tiktok(tiktok_url: str, verbose: bool = True,
             print(msg)
 
     try:
-        base_url, username, password, submit_interval = _load_yanghao_config(config_path)
+        base_url, username, password, submit_interval, preset_style = _load_yanghao_config(config_path)
     except Exception as e:
         _log(f"[配置加载失败] {e}")
         return NA
+
+    # 加载动态 preset（找不到时返回 {}，下面 merge 时不影响原默认值）
+    preset_overrides = _load_preset_style(preset_style) if preset_style else {}
+    if preset_overrides:
+        _log(f"使用 preset '{preset_style}'，覆盖字段: {list(preset_overrides.keys())}")
 
     session = requests.Session()
 
@@ -116,24 +144,33 @@ def generate_video_from_tiktok(tiktok_url: str, verbose: bool = True,
 
     # 提交任务（节流：保证全局两次 submit 至少间隔 submit_interval 秒）
     _wait_for_submit_slot(submit_interval)
+
+    # 默认 body（preset_overrides 中存在的字段会覆盖这些）
+    submit_body = {
+        "session_id": session_id,
+        "character_style": "All human characters MUST have Western/European/Caucasian appearance...",
+        "prefix": "American graphic novel style, motion comic aesthetic...",
+        "motion": ", (slow cinematic pan, slight character movement...)",
+        "suffix": ", muted color palette, dramatic lighting...",
+        "negative": "--no Japanese anime, moe, cute...",
+        "api_preset": "fun",
+        "aspect_ratio": "9:16",
+        "video_engine": "default",
+        "font_color": "&H00FFFFFF&|&H000000&",
+        "protagonist_description": "",
+        "prompt_style": "default",
+        "preset_name": "Comic(美式黑色漫画)",
+        "subtitle_max_chars": "default",
+    }
+    # 用 preset 覆盖；preset 没有的字段保留默认
+    submit_body.update(preset_overrides)
+    # preset_name 永远跟随 config.yanghao.preset_style（如果有的话）
+    if preset_style:
+        submit_body["preset_name"] = preset_style
+
     submit_resp = session.post(
         f"{base_url}/api/submit",
-        json={
-            "session_id": session_id,
-            "character_style": "All human characters MUST have Western/European/Caucasian appearance...",
-            "prefix": "American graphic novel style, motion comic aesthetic...",
-            "motion": ", (slow cinematic pan, slight character movement...)",
-            "suffix": ", muted color palette, dramatic lighting...",
-            "negative": "--no Japanese anime, moe, cute...",
-            "api_preset": "fun",
-            "aspect_ratio": "9:16",
-            "video_engine": "default",
-            "font_color": "&H00FFFFFF&|&H000000&",
-            "protagonist_description": "",
-            "prompt_style": "default",
-            "preset_name": "Comic(美式黑色漫画)",
-            "subtitle_max_chars": "default",
-        },
+        json=submit_body,
     )
     try:
         submit_data = submit_resp.json()

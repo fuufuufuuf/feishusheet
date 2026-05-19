@@ -1,0 +1,464 @@
+{
+  "meta": {
+    "3D测试": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "3D测试1": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "3D网格": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "Anime (动漫)": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "Baroque (巴洛克)": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "Cinematic (电影感)": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "Comic(美式黑色漫画)": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "Custom (自定义)": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "Deep Space Aesthetics": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "Graphic Novel & Pop Art（美漫与波普艺术）": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "Healing spiritual art": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "Historical realism(历史写实)": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "Historical realism（历史写实）": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "Horror(恐怖)": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "Illustration(插画)": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "Minimalist Japanese illustration style（日式简约手绘风）": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "NAVY0421": {
+      "owner": "181812632@qq.com",
+      "shared": true,
+      "type": "shared"
+    },
+    "Prefix(皮克斯)": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "Shuimo(水墨)": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "Thangka (唐卡)": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "Ukiyo-e(日本浮世绘)": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "shuimo(水墨)": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "我的测试风格01": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "我的测试风格02": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "水墨": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "潜水风格01": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "潜水风格02": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "科普": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "老照片": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "肌肉骷髅": {
+      "owner": "hangbeiai",
+      "shared": false,
+      "type": "user"
+    },
+    "赛博朋克": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "赛博朋克线条": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    },
+    "霓虹骷髅": {
+      "owner": "hangbeiai",
+      "shared": false,
+      "type": "user"
+    },
+    "霓虹骷髅2": {
+      "owner": "hangbeiai",
+      "shared": false,
+      "type": "user"
+    },
+    "预设": {
+      "owner": "__system__",
+      "shared": true,
+      "type": "shared"
+    }
+  },
+  "presets": {
+    "3D测试": {
+      "motion": "(Slow cinematic orbital pan, shimmering mesh vertices, rhythmic wireframe pulse, atmospheric digital tension, fluid skeletal movement), no motion blur.",
+      "negative": "no solid skin, no surface textures, no shading, no fills, photorealistic, 2D flat lines, anime, messy sketches, bright backgrounds, non-transparent objects.",
+      "prefix": "Total 3D wireframe world, full mesh topology aesthetic, zero solid surfaces, neon glowing gridlines, digital schematic style, low-poly structural geometry, complex poly-count lines",
+      "suffix": "pure black void background, infinite perspective grids, high-contrast luminous lines, 4k digital precision, architectural blueprint aesthetic."
+    },
+    "3D测试1": {
+      "motion": "(Slow cinematic orbital pan, pulsing grid illumination, shimmering vertex data streams, flowing light along wireframe edges), no motion blur, smooth structural articulation.",
+      "negative": "no solid skin, no opaque surfaces, no realistic hair, no shading, no matte textures, no photorealism, no human skin tones, no 2D flat drawing, no white backgrounds.",
+      "prefix": "Hyper-dense multi-colored 3D wireframe, iridescent neon mesh topology, 100% transparent volumes, complex glowing lattice structure, vibrant cyan magenta and amber gridlines, digital synthwave blueprint aesthetic, no solid surface",
+      "suffix": "pure pitch-black void, infinite perspective multi-color grids, high-frequency detail lines, 8k digital precision, cinematic hologram visualization."
+    },
+    "3D网格": {
+      "motion": "(Slow camera push-in, subtle mesh vertex shimmering, atmospheric narrative tension, smooth wireframe articulation), no motion blur.",
+      "negative": "no soft shading, photorealistic, matte surfaces, realistic textures, Japanese anime, moe, traditional 2D animation, watercolor.",
+      "prefix": "3D wireframe mesh aesthetic, low-poly structure, neon gridlines, cyan and magenta glow on characters, no photorealism, distinct digital vector feel.",
+      "suffix": "high-contrast digital palette, cinematic dark void composition, sharp grid definition, narrative storyboard structure"
+    },
+    "Anime (动漫)": {
+      "motion": " , (dynamic camera angle, wind blowing hair), ",
+      "negative": " --no photorealistic, 3d, ugly, deformed, text.",
+      "prefix": "Anime style, Makoto Shinkai style. ",
+      "suffix": " , high quality, 4k."
+    },
+    "Baroque (巴洛克)": {
+      "motion": "Slow Pan through Ornate Hallways,\nFlickering Candlelight Shadows,\nFloating Dust Particles in Light Beams,\nDeep Emotional Micro-expressions,\nSlow-motion Fabric Swirling",
+      "negative": "Bright, Cartoonish, Minimalist,\nFlat Lighting, Overexposed,\nModern Furniture, Plastic Textures,\nLow Resolution, Blurry Details,\nCheerful, Pop Colors",
+      "prefix": "Cinematic Baroque Psychological Horror,\nDramatic Chiaroscuro Photography,Oil Painting Masterpiece by Caravaggio,\nSurrealist Neoclassical Aesthetic",
+      "suffix": "Hyper-detailed Gold Filigree,\nHeavy Velvet Textures and Deep Crimsons,\nIntricate Allegorical Symbols,\n8k resolution, Unreal Engine 5 render,\nMoody, Melancholic Atmosphere"
+    },
+    "Cinematic (电影感)": {
+      "motion": " , (slow camera pan, rack focus, depth of field), ",
+      "negative": " --no cartoon, illustration, low res, drawing, anime.",
+      "prefix": "Cinematic lighting, photorealistic 8k, movie still. ",
+      "suffix": " , masterpiece, shot on IMAX, color graded."
+    },
+    "Comic(美式黑色漫画)": {
+      "motion": ", (slow cinematic pan, slight character movement, atmospheric tension, smooth transition), no motion blur,",
+      "negative": "--no Japanese anime, moe, cute, big eyes, photorealistic, 3d render, unreal engine, shiny skin, bright neon colors, watercolor, sketch, messy lines.",
+      "prefix": "American graphic novel style, motion comic aesthetic, Telltale Games art style, thick black outlines, cel shaded, flat shading, 2D vector animation, noir atmosphere,",
+      "suffix": ", muted color palette, dramatic lighting, cinematic composition, sharp focus, 4k, high definition, narrative storyboard style."
+    },
+    "Custom (自定义)": {
+      "motion": "",
+      "negative": "",
+      "prefix": "",
+      "suffix": ""
+    },
+    "Deep Space Aesthetics": {
+      "motion": " Slow zoom into the center of a galaxy, swirling star dust, flowing energy particles, celestial bodies in slow orbital motion, radiating light beams from the center, dynamic particle simulation, immersive tunnel effect.",
+      "negative": " People, humans, realistic city, modern technology, cars, cluttered composition, fast motion, bright daylight, low resolution, messy, cartoonish, low contrast, earthy tones.\n",
+      "prefix": "Deep space nebula background, mystical celestial art, sacred geometry, glowing portals, hyper-realistic cosmic energy, cinematic lighting, ethereal violet and deep blue color palette, 8k resolution, magical realism.",
+      "suffix": "Soft glow, bloom effect, anamorphic lens flare, dreamlike atmosphere, shimmering textures, golden hour highlights on planets, sharp focus on mystical symbols, intricate details, volumetric lighting."
+    },
+    "Graphic Novel & Pop Art（美漫与波普艺术）": {
+      "motion": "Subtle cel-shaded animation, parallax depth effect, slow kinetic typography integration, expressive pet eye blinking, rhythmic tail wagging, smooth transition between comic panels, 2D vector motion graphics.",
+      "negative": "Bold black ink outlines, cross-hatching shadows, limited vibrant palette (e.g., Amber and Deep Teal), Ben-Day dots texture, high contrast, clean white backdrop, professional vector art, 4K resolution, --ar 16:9.",
+      "prefix": "High-end graphic novel illustration, modern pop art aesthetic, hand-drawn comic book style, stylized pet portrait, emotional storytelling visual, minimalist composition with sharp focus.",
+      "suffix": "Photorealistic, 3D clay render, messy gradients, realistic fur texture, muddy colors, chaotic background, blurry outlines, low-quality sketches, generic clip art, oil painting, cross-eyed."
+    },
+    "Healing spiritual art": {
+      "motion": "Flowing aurora borealis, Gentling moving clouds, Twinkling distant stars, Floating golden dust particles, Slow zoom-in, Calm rippling water reflection, Ethereal light leaks.",
+      "negative": "Chaotic, Dark and gloomy, Sharp edges, Low quality, Distorted faces, Realistic photography, Urban noise, Gritty textures, Fast motion, Messy composition.",
+      "prefix": "Healing spiritual art, Ethereal fantasy style, Deep cosmic background, Sacred atmosphere, Shimmering starry sky, Dreamy watercolor textures, Mystical oil painting style, High definition, 4k.",
+      "suffix": "Soft volumetric lighting, Cinematic glow, Pastel color palette, Divine radiance, Tranquil mood, Masterpiece, Serene aesthetic, Intricate details of constellations."
+    },
+    "Historical realism(历史写实)": {
+      "motion": "slow camera pan, rack focus, depth of field",
+      "negative": "anime style,3D cartoon,Modern architecture,bright vibrant colors,cheerful atmosphere,futuristic elements,clean streets,sunlight,smiling people,blurry, low resolution,overhead sunny sky,pixar style,disney style,animated movie",
+      "prefix": "Historical realism,cinematic historical documentary style,hyper-realistic,dark baroque lighting,moody atmosphere,gritty texture,17th-century oil painting aesthetic",
+      "suffix": "Desaturated color palette,high contrast,volumetric lighting,4k"
+    },
+    "Historical realism（历史写实）": {
+      "motion": "slow camera pan, rack focus, depth of field",
+      "negative": "Modern architecture, bright vibrant colors, cheerful atmosphere, futuristic elements, clean streets, sunlight, smiling people, anime style, 3D cartoon, blurry, low resolution, overhead sunny sky.",
+      "prefix": "Historical realism、cinematic historical documentary style、hyper-realistic、dark baroque lighting、moody atmosphere、gritty texture",
+      "suffix": "Desaturated color palette，high contrast，volumetric lighting，4k"
+    },
+    "Horror(恐怖)": {
+      "motion": "shaky camera movement, slow creeping zoom, flickering lights, glitch effects, shadow crawling, subtle twitching, static noise",
+      "negative": "--no bright colors, sunny, cheerful, vibrant, cute, anime, cartoon, 3D render, masterpiece, colorful, warm lighting, high saturation, clear face, detailed eyes, nose, mouth, lips, facial features, looking at camera, front view of face, side profile, sharp jawline, human eyes, iris, eyelashes",
+      "prefix": "Japanese Horror (J-Horror) style, Found Footage, VHS aesthetic, grainy film texture, desaturated colors, eerie atmosphere, cinematic lighting, dim and gloomy, high contrast black and white, surrealism.",
+      "suffix": ", film grain, vhs degradation, analog horror aesthetic, motion blur, low fidelity, 1990s recorded footage, slight flickering."
+    },
+    "Illustration(插画)": {
+      "motion": ", (smooth 2D motion, infographic animation style, clear gestures, elements sliding in, dynamic posing), no motion blur, no camera shake,",
+      "negative": "--no 3D render, cgi, octane render, photorealistic, realism, sketch, messy lines, oil painting, heavy texture, dark, horror, noise, watermark, text.",
+      "prefix": "2D flat illustration style, vector art, Chinese MG animation style (Motion Graphics), educational video aesthetic, clean outlines, minimalist design,",
+      "suffix": ", cel shaded, solid colors, soft vector gradients, high definition, 8k, smooth texture, bright and professional lighting, commercial illustration."
+    },
+    "Minimalist Japanese illustration style（日式简约手绘风）": {
+      "motion": "Subtle wobbling line effect (Wiggle), Character jumping up for emphasis, Elements popping out from center, Hand-drawn graph animation, Kinetic doodle elements",
+      "negative": "No high complexity, No realistic shading, No 3D render, No harsh photographic textures, No messy background clutter, No sharp edges.",
+      "prefix": "Minimalist Japanese illustration style, Cute line art doodles, Children's storybook style, Flat design, Soft crayon texture, Pastel color palette",
+      "suffix": "Textured paper background, Notebook aesthetic, Clear rounded typography, Subtle watercolor paper grain, High legibility layout."
+    },
+    "NAVY0421": {
+      "aspect_ratio": "16:9",
+      "character_style": "All human characters MUST have Western/European/Caucasian appearance and features. Use Western cultural elements, clothing, and settings.",
+      "font_color": "&H00FFFF&",
+      "motion": "slow camera pan, rack focus, depth of field",
+      "negative": "anime style,3D cartoon,Modern architecture,bright vibrant colors,cheerful atmosphere,futuristic elements,clean streets,sunlight,smiling people,blurry, low resolution,overhead sunny sky,pixar style,disney style,animated movie",
+      "prefix": "Historical realism,cinematic historical documentary style,hyper-realistic,dark baroque lighting,moody atmosphere,gritty texture,17th-century oil painting aesthetic",
+      "prompt_style": "default",
+      "protagonist_description": "",
+      "subtitle_fontsize": 39,
+      "subtitle_margin_v": 38,
+      "subtitle_segment_range": "default",
+      "suffix": "Desaturated color palette,high contrast,volumetric lighting,4k"
+    },
+    "Prefix(皮克斯)": {
+      "motion": ", (smooth character animation, lively facial expressions, hair swaying, blinking eyes, cute gestures, cinematic lighting flow, slow zoom in), no stiff movement,",
+      "negative": "--no 2D, sketch, ink wash, painting, drawing, photorealistic, scary, deformed, bad anatomy, text, watermark, messy background, low resolution, gritty.",
+      "prefix": "3D Disney Pixar animation style, New Chinese aesthetic (Xin Zhongshi), C4D render, Octane render, ",
+      "suffix": ", soft studio lighting, subsurface scattering, clay and porcelain material mixture, 8k, masterpiece, unreal engine 5, clean background."
+    },
+    "Shuimo(水墨)": {
+      "motion": ", (SLOW MOTION: ink spreading, hair floating, subtle facial expression, smooth camera pan, elements fading in and out, dreamy atmosphere), no static scenes,",
+      "negative": "--no 3d render, photorealistic, western comic style, bright neon colors, messy lines, watermark, text, bad anatomy, deformed.",
+      "prefix": "Traditional Chinese Ink Wash Painting style, Shuimo art, minimalist composition, wet ink effect,",
+      "suffix": ", rice paper texture, ink splatter details, fluid brushstrokes, ancient Chinese aesthetic, masterpiece, 8k, faded edges."
+    },
+    "Thangka (唐卡)": {
+      "motion": " , (FAST MOTION: camera moving forward rapidly, elements transforming, dynamic composition, wind blowing, flying objects, energy flowing, no static scenes), ",
+      "negative": " --no child, minor, static, blurry, watermark, nsfw.",
+      "prefix": "Thangka style. ",
+      "suffix": " , traditional cloth texture, masterpiece."
+    },
+    "Ukiyo-e(日本浮世绘)": {
+      "motion": ", (2.5D parallax motion, stylized wave movement, paper cutout animation style,",
+      "negative": "--no 3d render, CGI, photorealistic, shiny, glossy, neon, western comic, photography, blur, depth of field, modern clothes.",
+      "prefix": "Japanese Ukiyo-e art style,",
+      "suffix": "intricate line work, masterpiece, 2D art."
+    },
+    "shuimo(水墨)": {
+      "motion": ", (SLOW MOTION: ink spreading, hair floating, subtle facial expression, smooth camera pan, elements fading in and out, dreamy atmosphere), no static scenes,",
+      "negative": "--no 3d render, photorealistic, western comic style, bright neon colors, messy lines, watermark, text, bad anatomy, deformed.",
+      "prefix": "Traditional Chinese Ink Wash Painting style, Shuimo art, minimalist composition, wet ink effect,",
+      "suffix": ", rice paper texture, ink splatter details, fluid brushstrokes, ancient Chinese aesthetic, masterpiece, 8k, faded edges."
+    },
+    "我的测试风格01": {
+      "character_style": "All characters MUST be rendered in Japanese anime/manga art style with anime-style eyes, hair, and proportions. Use 2D animation aesthetic.",
+      "motion": "highly exaggerated facial expressions, extreme dramatic emotional reaction, comical and dynamic pose, high energy, intense body language, large emotive eyes,\n",
+      "negative": "3D, realistic, hyper-detailed, smooth shading, gradients, beautiful, highly polished anime, Disney style, intricate complex background, CGI, high resolution textures, neat clean lines, masterpiece, cinematic lighting.\n",
+      "prefix": "minimalist 2D YouTube storytime animation style, crude and raw internet-native aesthetic, built from simple geometric shapes, flat solid colors,",
+      "protagonist_description": "",
+      "suffix": ", thick wobbly sketch-like outlines, line boil effect, rough linework, zero smooth shading, absolutely no gradients, unpolished, simple plain solid color minimalist background.\n"
+    },
+    "我的测试风格02": {
+      "character_style": "in a minimalist 2D YouTube storytime animation style, crude and raw internet-native aesthetic, built from simple geometric shapes. Thick, wobbly sketch-like outlines (line boil effect), flat solid colors, zero smooth shading. Highly exaggerated, dramatic, and comically expressive facial features. Raw, unpolished, fast-paced animation visual identity, simple plain minimalist background.",
+      "motion": "highly exaggerated facial expressions, extreme dramatic emotional reaction, comical and dynamic pose, high energy, intense body language, large emotive eyes,\n",
+      "negative": "3D, realistic, hyper-detailed, smooth shading, gradients, beautiful, highly polished anime, Disney style, intricate complex background, CGI, high resolution textures, neat clean lines, masterpiece, cinematic lighting.\n",
+      "prefix": "minimalist 2D YouTube storytime animation style, crude and raw internet-native aesthetic, built from simple geometric shapes, flat solid colors,",
+      "protagonist_description": "",
+      "suffix": ", thick wobbly sketch-like outlines, line boil effect, rough linework, zero smooth shading, absolutely no gradients, unpolished, simple plain solid color minimalist background.\n"
+    },
+    "水墨": {
+      "motion": ", (SLOW MOTION: ink spreading, hair floating, subtle facial expression, smooth camera pan, elements fading in and out, dreamy atmosphere), no static scenes,",
+      "negative": "--no 3d render, photorealistic, western comic style, bright neon colors, messy lines, watermark, text, bad anatomy, deformed.",
+      "prefix": "Traditional Chinese Ink Wash Painting style, Shuimo art, minimalist composition, wet ink effect,",
+      "suffix": ", rice paper texture, ink splatter details, fluid brushstrokes, ancient Chinese aesthetic, masterpiece, 8k, faded edges."
+    },
+    "潜水风格01": {
+      "aspect_ratio": "9:16",
+      "character_style": "Minimalist 2D YouTube storytime animation style, crude and raw internet-native aesthetic, characters built from simple geometric shapes like square heads. Thick hand-drawn outlines, flat solid colors, zero shading or gradients. Simple line-drawn exaggerated facial expressions.",
+      "font_color": "none",
+      "motion": ", (choppy frame rate, 2D motion, slight line boiling effect, quick cuts, simple pop-in animation),",
+      "negative": "3d, cgi, photorealistic, realistic human, detailed backgrounds, soft lighting, shadows, gradients, cinematic, 8k, complex textures, anime.",
+      "prefix": "2D flat animation, simple cartoon, minimalist doodle, rough sketch,",
+      "prompt_style": "default",
+      "protagonist_description": "",
+      "subtitle_fontsize": 19,
+      "subtitle_margin_v": null,
+      "suffix": ", rough internet-native aesthetic, solid color background, unpolished MS Paint style."
+    },
+    "潜水风格02": {
+      "aspect_ratio": "9:16",
+      "character_style": "Minimalist 2D doodle animation, crude blocky or blob-like character designs. Colored in a muted, desaturated pastel color palette (dull greens, mustard yellows, faded purples, beige skin tones). Thick, slightly wobbly hand-drawn black outlines. Extremely simplistic facial features.",
+      "font_color": "none",
+      "motion": "(slight line boil effect, jittery outlines, choppy low framerate 2D animation, static backgrounds),",
+      "negative": "--no vibrant colors, --no high saturation, --no photorealism, --no 3d, --no gradients, --no shadows, --no detailed backgrounds, --no cinematic lighting, --no realistic proportions.",
+      "prefix": "Muted color palette, flat 2D doodle animation, crude minimalist sketch, dull and desaturated colors,",
+      "prompt_style": "default",
+      "protagonist_description": "",
+      "subtitle_fontsize": 19,
+      "subtitle_margin_v": null,
+      "suffix": ", solid flat colored background, internet storytime aesthetic, zero shading, flat vector shapes."
+    },
+    "科普": {
+      "aspect_ratio": "9:16",
+      "character_style": "All human characters MUST have Western/European/Caucasian appearance and features. Use Western cultural elements, clothing, and settings.",
+      "font_color": "&H00FFFFFF&|&H000000&",
+      "motion": "Moderate visual flow, smooth transitions, natural lighting, aerial and landscape shots, clear subject focus, engaging visual rhythm",
+      "negative": "no abstract visuals, no overly artistic distortion",
+      "prefix": "Cinematic educational documentary, vivid and dynamic atmosphere, authoritative yet engaging tone, high-quality geographic storytelling, rich visual world-building",
+      "prompt_style": "default",
+      "protagonist_description": "",
+      "subtitle_fontsize": 9,
+      "subtitle_margin_v": 39,
+      "suffix": "Professional documentary aesthetic, clean composition, natural color grading, polished production value, informative and captivating finish"
+    },
+    "老照片": {
+      "motion": "Slow motion, slideshow images",
+      "negative": "no cartoon, illustration, low res, drawing, anime.",
+      "prefix": "Granular Documentary Style，Vintage photos, retro documentary style",
+      "suffix": "Typical Sepia or low-saturation warm gray tones.The frame is filled with Grain and Noise, and it features prominent scratches, stains, water spots, and dust marks.The image has a faded effect."
+    },
+    "肌肉骷髅": {
+      "aspect_ratio": "9:16",
+      "character_style": "",
+      "font_color": "&H00FFFFFF&|&H000000&",
+      "motion": ", (slow cinematic pan, slight character movement, atmospheric tension, smooth transition), no motion blur,",
+      "negative": "--no Japanese anime, moe, cute, big eyes, photorealistic, 3d render, unreal engine, shiny skin, bright neon colors, watercolor, sketch, messy lines.",
+      "prefix": "Visual: 3D anatomical transparent human body, \nsemi-transparent skin, visible skeleton + muscles + organs\nCamera: Slow cinematic pan / static mid-shot\nColor: Deep teal background, warm bone tones, pink muscles\nOverlay: Bold white subtitle with yellow keyword highlight at bottom\nTone: Scientific yet visually engaging, ASMR-adjacent pacing",
+      "prompt_style": "default",
+      "protagonist_description": "",
+      "subtitle_fontsize": 9,
+      "subtitle_margin_v": 39,
+      "subtitle_segment_range": "default",
+      "suffix": ", muted color palette, dramatic lighting, cinematic composition, sharp focus, 4k, high definition, narrative storyboard style."
+    },
+    "赛博朋克": {
+      "aspect_ratio": "9:16",
+      "character_style": "male:cyan glowing wireframe;female:magenta glowing wireframe and long hair",
+      "font_color": "&H00FFFFFF&|&H000000&",
+      "motion": "slow camera pan, rack focus, depth of field",
+      "negative": "lowres, bad anatomy, bad hands, text error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, deformed, disfigured, extra limbs, missing limbs, floating limbs, disconnected limbs, malformed limbs, mutated hands, mutated fingers, long neck, ugly, flat colors, oversaturated, grainy, noisy, realistic skin, photorealistic, 3d render with textures, non-wireframe elements, solid colors, opaque objects, messy lines, broken grid",
+      "prefix": "masterpiece, best quality, ultra-detailed,4K, cinematic lighting, high contrast, cyberpunk aesthetic",
+      "prompt_style": "default",
+      "protagonist_description": "",
+      "subtitle_fontsize": 9,
+      "subtitle_margin_v": 83,
+      "suffix": "futuristic, holographic, clean lines, luminous glow, smooth rendering"
+    },
+    "赛博朋克线条": {
+      "aspect_ratio": "9:16",
+      "character_style": "male:cyan glowing wireframe;female:magenta glowing wireframe and long hair",
+      "font_color": "&H00FFFFFF&|&H000000&",
+      "motion": "slow camera pan, rack focus, depth of field",
+      "negative": "lowres, bad anatomy, bad hands, text error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, deformed, disfigured, extra limbs, missing limbs, floating limbs, disconnected limbs, malformed limbs, mutated hands, mutated fingers, long neck, ugly, flat colors, oversaturated, grainy, noisy, realistic skin, photorealistic, 3d render with textures, non-wireframe elements, solid colors, opaque objects, messy lines, broken grid",
+      "prefix": "masterpiece, best quality, ultra-detailed, 8K, cinematic lighting, high contrast, cyberpunk aesthetic, retro 80s sci-fi, Tron legacy aesthetic",
+      "prompt_style": "default",
+      "protagonist_description": "",
+      "subtitle_fontsize": 9,
+      "subtitle_margin_v": 83,
+      "suffix": "futuristic, holographic, clean lines, luminous glow, smooth rendering"
+    },
+    "霓虹骷髅": {
+      "aspect_ratio": "9:16",
+      "character_style": "A highly detailed 3D animated skeleton， glowing with a vibrant neon purple aura. The skeleton’s eyes are luminous violet. The background is a dark void with a retro neon grid on the floor. Cinematic lighting, soft bloom effect, hyper-realistic bone texture, 4k resolution, 80s synthwave style.",
+      "font_color": "&H00FFFFFF&|&H000000&",
+      "motion": " , (slow camera pan, rack focus, depth of field), ",
+      "negative": " --no cartoon, illustration, low res, drawing, anime.",
+      "prefix": "视觉风格： 3D stylized character design, Cyberpunk aesthetic, Synthwave/Retrowave vibe, Digital surrealism.\n主体材质： Luminous 3D skeleton, Glass-like anatomy, Glowing purple skull, Detailed human brain with electric neural networks.\n色彩方案： Neon purple and magenta color palette, High contrast, Vibrant violet glow, Deep black background.\n灯光效果： Volumetric lighting, Bloom effect, Self-illuminated objects, Glowing eyes.\n环境背景： Neon grid floor, Infinite black void, Floating digital particles, Retro-futuristic space.",
+      "prompt_style": "default",
+      "protagonist_description": "",
+      "subtitle_fontsize": 9,
+      "subtitle_margin_v": 39,
+      "subtitle_segment_range": "default",
+      "suffix": " , masterpiece, shot on IMAX, color graded."
+    },
+    "霓虹骷髅2": {
+      "aspect_ratio": "9:16",
+      "character_style": "Humanoid figures made of light, Anatomical wireframe, Digital silhouette, Expressive digital avatars.",
+      "font_color": "&H00FFFFFF&|&H000000&",
+      "motion": ", (slow cinematic pan, slight character movement, atmospheric tension, smooth transition), no motion blur,",
+      "negative": "--no Japanese anime, moe, cute, big eyes, photorealistic, 3d render, unreal engine, shiny skin, bright neon colors, watercolor, sketch, messy lines.",
+      "prefix": "3D digital wireframe style, Holographic mesh, Cyberpunk aesthetic, Digital twin, Virtual reality. Glowing neon lines, Electric blue and magenta color palette, Translucent bodies, Luminous mesh grid, High contrast, Black background.Futuristic, Surreal, Emotional, Psychological, Cybernetic.",
+      "prompt_style": "default",
+      "protagonist_description": "",
+      "subtitle_fontsize": 9,
+      "subtitle_margin_v": 39,
+      "subtitle_segment_range": "default",
+      "suffix": ", muted color palette, dramatic lighting, cinematic composition, sharp focus, 4k, high definition, narrative storyboard style."
+    },
+    "预设": {
+      "character_style": "All human characters MUST have Western/European/Caucasian appearance and features. Use Western cultural elements, clothing, and settings.",
+      "motion": " , (slow camera pan, rack focus, depth of field), ",
+      "negative": " --no cartoon, illustration, low res, drawing, anime.",
+      "prefix": "Cinematic lighting, photorealistic 8k, movie still. ",
+      "protagonist_description": "",
+      "suffix": " , masterpiece, shot on IMAX, color graded."
+    }
+  }
+}
