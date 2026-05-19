@@ -35,7 +35,7 @@ DEFAULT_SUBMIT_INTERVAL = 2.0         # config 缺失时的兜底值
 
 
 def _load_preset_style(preset_name: str, style_file: str = STYLE_FILE):
-    """从 yanghao_sytle.json 读取指定 preset；找不到/出错返回空 dict。"""
+    """从 yanghao_style.json 的 presets[preset_name] 取该 preset 的字段；找不到/出错返回空 dict。"""
     if not preset_name:
         return {}
     try:
@@ -77,33 +77,41 @@ def _load_yanghao_config(config_path=CONFIG_PATH):
     username = y.get("username")
     password = y.get("password")
     submit_interval = float(y.get("submit_interval", DEFAULT_SUBMIT_INTERVAL))
-    preset_style = (y.get("preset_style") or "").strip()
     if not all([base_url, username, password]):
         raise RuntimeError(
             "config.json 中 yanghao.base_url / username / password 不完整"
         )
-    return base_url, username, password, submit_interval, preset_style
+    return base_url, username, password, submit_interval
 
 
 def generate_video_from_tiktok(tiktok_url: str, verbose: bool = True,
                                config_path: str = CONFIG_PATH,
-                               slot_num: str = "1") -> str:
+                               slot_num: str = "1",
+                               preset_style: str = "") -> str:
     """
     传入 TikTok 视频 URL，返回新生成视频的下载链接；失败/未完成返回 "N/A"。
 
     slot_num: 服务端用 (slot_num, 秒级时间戳) 拼接 task_id。并发场景下必须给每个
               线程不同的 slot_num，否则同一秒提交的多个请求会共用一个 task_id，
               结果回写时所有记录都指向同一份输出。
+    preset_style: 来自 bitable_r 该记录 handle 的"养号风格"列。空串表示不应用 preset，
+                  全用 hardcoded 默认。不再从 config.json 读取。
     """
     def _log(msg):
         if verbose:
             print(msg)
 
+    def _warn(msg):
+        # 失败原因始终打印，方便 verbose=False 的 batch 调用排查
+        print(f"[yanghao {slot_num}] {msg}")
+
     try:
-        base_url, username, password, submit_interval, preset_style = _load_yanghao_config(config_path)
+        base_url, username, password, submit_interval = _load_yanghao_config(config_path)
     except Exception as e:
-        _log(f"[配置加载失败] {e}")
+        _warn(f"[配置加载失败] {e}")
         return NA
+
+    preset_style = (preset_style or "").strip()
 
     # 加载动态 preset（找不到时返回 {}，下面 merge 时不影响原默认值）
     preset_overrides = _load_preset_style(preset_style) if preset_style else {}
@@ -119,7 +127,7 @@ def generate_video_from_tiktok(tiktok_url: str, verbose: bool = True,
         allow_redirects=True,
     )
     if login_resp.status_code != 200:
-        _log(f"[登录失败] status={login_resp.status_code} body={login_resp.text[:200]}")
+        _warn(f"[登录失败] status={login_resp.status_code} body={login_resp.text[:200]}")
         return NA
     _log(f"登录成功: {login_resp.text[:120]}")
 
@@ -135,10 +143,10 @@ def generate_video_from_tiktok(tiktok_url: str, verbose: bool = True,
     try:
         set_link_data = set_link_resp.json()
     except Exception as e:
-        _log(f"[set_link_mode 解析失败] {e}: {set_link_resp.text[:200]}")
+        _warn(f"[set_link_mode 解析失败] {e}: status={set_link_resp.status_code} body={set_link_resp.text[:200]}")
         return NA
     if not set_link_data.get("ok"):
-        _log(f"[set_link_mode 失败] {set_link_data}")
+        _warn(f"[set_link_mode 失败] {set_link_data}")
         return NA
     _log(f"set_link_mode: {set_link_data}")
 
@@ -162,8 +170,12 @@ def generate_video_from_tiktok(tiktok_url: str, verbose: bool = True,
         "preset_name": "Comic(美式黑色漫画)",
         "subtitle_max_chars": "default",
     }
-    # 用 preset 覆盖；preset 没有的字段保留默认
-    submit_body.update(preset_overrides)
+    # 用 preset 覆盖；preset 没有的字段保留默认；
+    # preset 中为 None / 空串的字段也不覆盖默认（避免把 "" 当成"清空"导致服务端必填校验失败）
+    submit_body.update({
+        k: v for k, v in preset_overrides.items()
+        if v is not None and v != ""
+    })
     # preset_name 永远跟随 config.yanghao.preset_style（如果有的话）
     if preset_style:
         submit_body["preset_name"] = preset_style
@@ -175,14 +187,14 @@ def generate_video_from_tiktok(tiktok_url: str, verbose: bool = True,
     try:
         submit_data = submit_resp.json()
     except Exception as e:
-        _log(f"[submit 解析失败] {e}: {submit_resp.text[:200]}")
+        _warn(f"[submit 解析失败] {e}: status={submit_resp.status_code} body={submit_resp.text[:200]}")
         return NA
     _log(f"submit: {submit_data}")
 
     queued = submit_data.get("queued") or []
     task_id = queued[0] if queued else None
     if not task_id:
-        _log(f"[submit] 没有 queued task: {submit_data}")
+        _warn(f"[submit] 没有 queued task: {submit_data}")
         return NA
 
     # 轮询任务
@@ -191,14 +203,14 @@ def generate_video_from_tiktok(tiktok_url: str, verbose: bool = True,
     final_status = ""
     while True:
         if time.time() - start_ts > POLL_TIMEOUT:
-            _log("[超时] 等待时间过长，停止轮询")
+            _warn(f"[超时] task_id={task_id} 等待 {POLL_TIMEOUT}s 仍未结束")
             return NA
 
         task_resp = session.get(f"{base_url}/api/task/{task_id}")
         try:
             task_info = task_resp.json()
         except Exception as e:
-            _log(f"[轮询解析异常] {e}: {task_resp.text[:200]}")
+            _warn(f"[轮询解析异常] task_id={task_id} {e}: {task_resp.text[:200]}")
             time.sleep(POLL_INTERVAL)
             continue
 
@@ -209,12 +221,12 @@ def generate_video_from_tiktok(tiktok_url: str, verbose: bool = True,
 
         if status not in ("running", "pending", "processing", "queued"):
             final_status = status
-            _log(f"任务结束，最终状态: {final_status}")
             break
 
         time.sleep(POLL_INTERVAL)
 
     if final_status != "completed":
+        _warn(f"任务非 completed 终态 task_id={task_id} status={final_status} info={task_info}")
         return NA
 
     # 任务完成：用同一个登录态 session 把 mp4 拉下来，再上传 Cloudinary，
@@ -226,7 +238,7 @@ def generate_video_from_tiktok(tiktok_url: str, verbose: bool = True,
     try:
         with session.get(download_url, stream=True, timeout=300) as r:
             if r.status_code != 200:
-                _log(f"[下载失败] status={r.status_code}")
+                _warn(f"[下载失败] task_id={task_id} status={r.status_code} body={r.text[:200]}")
                 return NA
             # 从 Content-Disposition 或 task_id 推断扩展名
             ext = ".mp4"
@@ -248,7 +260,7 @@ def generate_video_from_tiktok(tiktok_url: str, verbose: bool = True,
             size_mb = round(os.path.getsize(local_path) / 1024 / 1024, 2)
             _log(f"下载完成 {size_mb} MB -> {local_path}")
     except Exception as e:
-        _log(f"[下载异常] {e}")
+        _warn(f"[下载异常] task_id={task_id} {e}")
         if local_path and os.path.exists(local_path):
             try:
                 os.remove(local_path)
@@ -264,7 +276,7 @@ def generate_video_from_tiktok(tiktok_url: str, verbose: bool = True,
             resource_type="video",
         )
     except Exception as e:
-        _log(f"[Cloudinary 异常] {e}")
+        _warn(f"[Cloudinary 异常] task_id={task_id} {e}")
         cloud_url = ""
     finally:
         try:
@@ -273,7 +285,7 @@ def generate_video_from_tiktok(tiktok_url: str, verbose: bool = True,
             pass
 
     if not cloud_url:
-        _log("[Cloudinary] 上传未返回 URL")
+        _warn(f"[Cloudinary] task_id={task_id} 上传未返回 URL")
         return NA
     _log(f"Cloudinary URL = {cloud_url}")
     return cloud_url
@@ -289,7 +301,11 @@ def _unwrap_feishu_text(val):
 
 
 def _load_nurturing_handles(config):
-    """从 bitable_r 读取 养号=是 的 handle 集合，使用 feishu_r 凭据"""
+    """
+    从 bitable_r 读取 养号=是 的记录，返回 dict[handle -> 养号风格]
+    （养号风格 为空则 value 为 ""，下游 generate_video_from_tiktok 不应用 preset）。
+    使用 feishu_r 凭据。
+    """
     feishu_r_cfg = config.get("feishu_r", {}) or {}
     bitable_r_cfg = config.get("bitable_r", {}) or {}
     app_id = feishu_r_cfg.get("app_id")
@@ -299,11 +315,11 @@ def _load_nurturing_handles(config):
 
     if not all([app_id, app_secret, app_token, table_id]):
         print("[yanghao_batch] feishu_r / bitable_r 配置缺失")
-        return set()
+        return {}
 
     feishu_r = FeishuSheet(app_id, app_secret)
     result = feishu_r.get_sheet_data(app_token, table_id, get_all=True)
-    nurturing = set()
+    nurturing = {}  # handle -> preset_style
     for record in (result or {}).get("data", {}).get("items", []) or []:
         fields = record.get("fields", {}) or {}
         handle = _unwrap_feishu_text(fields.get("handle")).strip()
@@ -311,13 +327,21 @@ def _load_nurturing_handles(config):
         if isinstance(nurturing_raw, list) and nurturing_raw:
             first = nurturing_raw[0]
             nurturing_raw = first.get("text", "") if isinstance(first, dict) else str(first)
-        if handle and str(nurturing_raw or "").strip() == "是":
-            nurturing.add(handle)
-    print(f"[yanghao_batch] bitable_r 中养号 handle 共 {len(nurturing)} 个")
+        if not handle or str(nurturing_raw or "").strip() != "是":
+            continue
+        # 取 养号风格 列（同样可能是富文本数组 / 单选）
+        style_raw = fields.get("养号风格")
+        if isinstance(style_raw, list) and style_raw:
+            first = style_raw[0]
+            style_raw = first.get("text", "") if isinstance(first, dict) else str(first)
+        preset_style = str(style_raw or "").strip()
+        nurturing[handle] = preset_style
+    print(f"[yanghao_batch] bitable_r 中养号 handle 共 {len(nurturing)} 个："
+          + ", ".join(f"{h}->'{s or '<无>'}'" for h, s in nurturing.items()))
     return nurturing
 
 
-def _process_single_yanghao_record(rec, feishu_sheet, app_token, table_id, config_path, total, idx, slot_num):
+def _process_single_yanghao_record(rec, feishu_sheet, app_token, table_id, config_path, total, idx, slot_num, preset_style):
     """处理单条养号记录：调用 yanghao 生成 + 写回 ai_video_urls。返回 ('ok'|'failed'|'skipped', ...)"""
     record_id = rec.get("record_id") or rec.get("id")
     fields = rec.get("fields", {}) or {}
@@ -325,7 +349,7 @@ def _process_single_yanghao_record(rec, feishu_sheet, app_token, table_id, confi
     video_id = _unwrap_feishu_text(fields.get("video_id")).strip()
     source_url = _unwrap_feishu_text(fields.get("视频文件")).strip()
 
-    tag = f"[{idx}/{total}] slot={slot_num} record={record_id} handle={handle} video_id={video_id}"
+    tag = f"[{idx}/{total}] slot={slot_num} record={record_id} handle={handle} video_id={video_id} preset='{preset_style or '<无>'}'"
 
     if not source_url:
         print(f"  {tag} 视频文件为空，跳过")
@@ -333,7 +357,8 @@ def _process_single_yanghao_record(rec, feishu_sheet, app_token, table_id, confi
 
     print(f"  {tag} 开始生成 (源 URL: {source_url})")
     download_url = generate_video_from_tiktok(
-        source_url, verbose=False, config_path=config_path, slot_num=slot_num,
+        source_url, verbose=False, config_path=config_path,
+        slot_num=slot_num, preset_style=preset_style,
     )
     if download_url == NA:
         print(f"  {tag} 生成失败，保留 ai_video_urls 为空以便下次重试")
@@ -377,8 +402,9 @@ def main_process_yanghao_records(config_path: str = CONFIG_PATH, max_concurrent:
     max_concurrent = max(1, int(max_concurrent))
     print(f"[yanghao_batch] 并发数 = {max_concurrent}")
 
-    nurturing_handles = _load_nurturing_handles(config)
-    if not nurturing_handles:
+    # handle -> preset_style 映射；空 dict 表示没有养号账号
+    handle_preset_map = _load_nurturing_handles(config)
+    if not handle_preset_map:
         print("[yanghao_batch] 没有养号 handle，跳过")
         return 0, 0, 0
 
@@ -406,7 +432,7 @@ def main_process_yanghao_records(config_path: str = CONFIG_PATH, max_concurrent:
     for rec in items:
         fields = rec.get("fields", {}) or {}
         handle = _unwrap_feishu_text(fields.get("handle")).strip()
-        if handle and handle in nurturing_handles:
+        if handle and handle in handle_preset_map:
             pending.append(rec)
 
     print(f"[yanghao_batch] 找到 {len(pending)} 条养号待处理记录（主表命中 {len(items)} 条）")
@@ -416,15 +442,22 @@ def main_process_yanghao_records(config_path: str = CONFIG_PATH, max_concurrent:
     counts = {"ok": 0, "failed": 0, "skipped": 0}
     total = len(pending)
 
+    def _preset_for(rec):
+        fields = rec.get("fields", {}) or {}
+        h = _unwrap_feishu_text(fields.get("handle")).strip()
+        return handle_preset_map.get(h, "")
+
     with ThreadPoolExecutor(max_workers=max_concurrent) as executor:
         # 每条记录分配 1..max_concurrent 之间循环的 slot_num，保证同时在跑的
         # 任务 slot_num 互不相同 —— 服务端用 (slot_num, 秒级时间戳) 生成 task_id，
         # 不区分就会让同一秒提交的几个任务共用一个 task_id。
+        # preset_style 按 handle 从 bitable_r.养号风格 取得（不再读 config.json）。
         futures = {
             executor.submit(
                 _process_single_yanghao_record,
                 rec, feishu_sheet, app_token, table_id, config_path,
                 total, i, str(((i - 1) % max_concurrent) + 1),
+                _preset_for(rec),
             ): i
             for i, rec in enumerate(pending, 1)
         }

@@ -379,10 +379,15 @@ async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table
                              existing_video_ids=None,
                              out_dir: str = "downloads",
                              download_include_create_time: bool = True,
-                             is_nurturing: bool = False):
+                             is_nurturing: bool = False,
+                             expected_handle: str = ""):
     """
     拦截并分析网络请求
+    expected_handle: 期望抓到的账号 handle（不含 @）。TikTok SPA 跨账号切换时
+                     首个 item_list 响应可能是上一账号的缓存，必须按 author.uniqueId
+                     校验后再接受，否则会出现张冠李戴。
     """
+    expected_handle = (expected_handle or "").strip().lstrip("@")
     # 存储所有请求
     requests_data = []
     responses_data = []
@@ -452,8 +457,18 @@ async def intercept_requests(page, url, feishu_sheet=None, app_token=None, table
         if first_item_list_done[0]:
             print("\n[跳过 itemList] 已处理过第一个 itemList,跳过后续数据")
             return
-        first_item_list_done[0] = True
         item_list = json_body["itemList"]
+
+        # 校验：第一条 item 的 uniqueId 必须等于期望的 handle，
+        # 否则视为 SPA 跨账号切换时残留的上一账号 item_list 缓存，丢弃继续等下一个响应。
+        if expected_handle and item_list:
+            first_handle = ((item_list[0].get("author") or {}).get("uniqueId") or "").strip()
+            if first_handle != expected_handle:
+                print(f"\n[忽略 itemList] 期望 handle={expected_handle}，"
+                      f"但响应里 author.uniqueId={first_handle}，等下一个响应")
+                return
+
+        first_item_list_done[0] = True
         print("\n[解析 itemList] 找到 itemList 数组,包含 {} 项".format(len(item_list)))
         collected_items.extend(item_list)
 
@@ -727,6 +742,7 @@ async def update_titkok_video():
                         out_dir=out_dir,
                         download_include_create_time=download_include_create_time,
                         is_nurturing=is_nurturing,
+                        expected_handle=handle,
                     )
                     print(f"URL {url} 处理成功")
                 except Exception as e:
